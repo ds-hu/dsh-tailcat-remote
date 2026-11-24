@@ -1,0 +1,33 @@
+dsh-tailcat-remote
+Copyright (c) 2026 the dsh-tailcat-remote authors
+
+This product is MIT-licensed (see LICENSE).
+
+Peer dependency
+  The package declares a peer dependency on @deepseek-ai/schemastery, which the
+  DeepSeek Harness installation supplies. It is used only for the Config schema;
+  every runtime capability — the web server, the authenticated Fetch seam, the
+  connection/cookie checks, the subprocess provider, the logger — is reached
+  through the Cordis context object.
+
+QR Code Generator
+  vendor/qrcode.mjs is qrcode-generator 1.4.4 by Kazuhiko Arase.
+  Copyright (c) 2009 Kazuhiko Arase.
+  Licensed under the MIT license; the original header is retained in the file.
+  Source: https://github.com/kazuhikoarase/qrcode-generator
+  The word "QR Code" is a registered trademark of DENSO WAVE INCORPORATED.
+
+tailcat
+  tailcat is a separate program by Tailscale Inc & contributors, licensed
+  under the BSD 3-Clause License. It is not bundled with this package and is
+  not a dependency of the npm package; users install it themselves. This
+  plugin only starts the user's `tailcat` executable and parses its output.
+  Copyright (c) 2020 Tailscale Inc & contributors.
+  Source: https://github.com/tailscale/tailcat
+
+Original material
+  The Host runtime (door, supervisor, control route, state), the client
+  modules, the zh/en dictionaries, the icon (icon.svg) and the documentation
+  were written for this project. "DeepSeek", "DeepSeek Harness" and
+  "Tailscale" are names of their respective platforms and projects, not a
+  claim of endorsement.

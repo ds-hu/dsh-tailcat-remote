@@ -1,0 +1,75 @@
+name: UI screenshots
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  screenshots:
+    name: Generate README screenshots in a browser
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci --no-audit --no-fund
+      - run: npm install -g pnpm@11 @deepseek-ai/dsh@0.2.2-rc.5
+
+      - name: Put a deterministic tailcat stub on PATH
+        run: |
+          mkdir -p "$RUNNER_TEMP/bin"
+          cp scripts/ci/tailcat-stub.sh "$RUNNER_TEMP/bin/tailcat"
+          chmod +x "$RUNNER_TEMP/bin/tailcat"
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/bin/tailcat" version
+
+      - name: Prepare a throwaway web profile
+        env:
+          DSH_PROFILE: shots
+        run: |
+          dsh --profile shots --from-default-profile web --dump-config > /dev/null
+          dsh plugin --profile shots add "$GITHUB_WORKSPACE"
+          node scripts/ci/prepare-profile.mjs
+          node -e "const p=require(process.env.HOME+'/.dsh/profiles/shots/package.json'); console.log(p.dsh.profile.bundles)"
+
+      - name: Install Playwright Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.64.0
+          npx playwright install --with-deps chromium
+
+      - name: Boot Harness and capture the token URL
+        run: |
+          nohup dsh --profile shots --no-open --host 127.0.0.1 --port 3099 > "$RUNNER_TEMP/dsh.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/dsh.pid"
+          url=""
+          for _ in $(seq 1 120); do
+            url=$(grep -oE 'http://127\.0\.0\.1:3099/\?token=[A-Za-z0-9._~-]+' "$RUNNER_TEMP/dsh.log" | head -1 || true)
+            if [ -n "$url" ]; then break; fi
+            sleep 1
+          done
+          if [ -z "$url" ]; then
+            tail -200 "$RUNNER_TEMP/dsh.log"
+            exit 1
+          fi
+          printf 'DSH_URL=%s\n' "$url" >> "$GITHUB_ENV"
+
+      - name: Capture screenshots
+        run: node scripts/ci/screenshot.mjs
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshots
+          path: docs/screenshots/
+          if-no-files-found: warn
+
+      - name: Harness log (failure diagnostics)
+        if: always()
+        run: tail -200 "$RUNNER_TEMP/dsh.log" || true

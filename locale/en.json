@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Remote Access",
+    "description": "Reach this Harness from anywhere over tailcat: pair a browser with a QR code, manage device keys, and watch the tunnel — no public port."
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Acceso remoto",
+    "description": "Accede a este Harness desde cualquier lugar con tailcat: empareja un navegador con un código QR, gestiona las claves de dispositivos y observa el túnel, sin abrir puertos públicos."
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "name": "@ds-hu/dsh-tailcat-remote",
+  "version": "0.1.0",
+  "description": "Remote access for the DeepSeek Harness Web GUI over tailcat: a pairing page, a tailnet-only door, and a supervised tailcat server — no public port and no inbound firewall change.",
+  "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg",
+    "./package.json": "./package.json"
+  },
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ds-hu/dsh-tailcat-remote.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ds-hu/dsh-tailcat-remote/issues"
+  },
+  "homepage": "https://github.com/ds-hu/dsh-tailcat-remote#readme",
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "dsh-plugin",
+    "dsh-bundle",
+    "cordis",
+    "tailcat",
+    "tailscale",
+    "remote-access",
+    "wireguard",
+    "web-ui"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": [
+        "./cordis.patch.yml"
+      ]
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-sidebar",
+        "@deepseek-ai/dsh-client-ui-layout",
+        "@deepseek-ai/dsh-client-locale"
+      ]
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/schemastery": "^3.19.0"
+  },
+  "devDependencies": {
+    "@deepseek-ai/schemastery": "^3.19.0"
+  },
+  "license": "MIT",
+  "files": [
+    "index.js",
+    "src",
+    "vendor",
+    "client.js",
+    "cordis.patch.yml",
+    "locale",
+    "icon.svg",
+    "README.md",
+    "README.en.md",
+    "docs",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "check": "node --check index.js && node --check client.js && node --test test/*.test.mjs"
+  }
+}

@@ -1,0 +1,38 @@
+# The @ds-hu/dsh-tailcat-remote bundle patch.
+#
+# One row: the Host half. `name` must be this package's name so the Loader
+# resolves the row (and therefore the code it mounts) from the profile's
+# node_modules. The browser half is declared by package.json's `dsh.client`
+# and served by the Web shell; it lives in the same page tree as the other
+# sidebar pages.
+#
+# The plugin owns its runtime data in $DSH_HOME/tailcat-remote/ (the device
+# allow-list) and the tailcat private key under the platform user-config
+# directory. It publishes no Cordis service, so the row sits loose in the
+# Host root realm instead of an `isolate` group.
+#
+# Every field below is optional. Defaults are chosen for the common case
+# (Unix-socket door, saved stable key, allow-list off). Uncomment a field only
+# when the machine needs a different placement.
+#
+#   - insert:
+#       - id: dsh-tailcat-remote
+#         name: '@ds-hu/dsh-tailcat-remote'
+#         config:
+#           binaryPath: tailcat          # PATH name or absolute path
+#           port: 13080                  # virtual port inside tailcat
+#           listen: socket               # socket | tcp
+#           socketPath: ''               # empty = $DSH_HOME/tailcat-remote.sock
+#           keyName: dsh-tailcat         # saved tailcat key name (or path)
+#           addressMode: stable          # stable | ephemeral
+#           derpMapUrl: ''               # empty = tailcat default
+#           autoStart: true
+#           logAccess: true
+#           restartEnabled: true
+#           maxRestartAttempts: 10
+#           restartBaseDelayMs: 500
+#           restartMaxDelayMs: 30000
+
+- insert:
+    - id: dsh-tailcat-remote
+      name: '@ds-hu/dsh-tailcat-remote'
