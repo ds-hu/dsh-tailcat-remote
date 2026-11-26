@@ -60,6 +60,9 @@ jobs:
           fi
           printf 'DSH_URL=%s\n' "$url" >> "$GITHUB_ENV"
 
+      - name: Capture screenshots
+        run: node scripts/ci/screenshot.mjs
+
       - name: Boot a second Harness without tailcat
         run: |
           kill "$(cat "$RUNNER_TEMP/dsh.pid")" 2>/dev/null || true
@@ -90,8 +93,8 @@ jobs:
           fi
           printf 'DSH_INSTALL_URL=%s\n' "$url" >> "$GITHUB_ENV"
 
-      - name: Capture screenshots
-        run: node scripts/ci/screenshot.mjs
+      - name: Capture the install-card screenshot
+        run: node scripts/ci/screenshot-install.mjs
 
       - uses: actions/upload-artifact@v4
         if: always()

@@ -102,26 +102,6 @@ await security.scrollIntoViewIfNeeded();
 await page.waitForTimeout(500);
 await security.screenshot({ path: path.join(outDir, '02-security.png') });
 
-if (process.env.DSH_INSTALL_URL) {
-  const installContext = await browser.newContext({
-    viewport: { width: 1440, height: 1100 },
-    deviceScaleFactor: 2,
-    locale: 'zh-CN',
-    colorScheme: 'light',
-  });
-  const installPage = await installContext.newPage();
-  installPage.setDefaultTimeout(30_000);
-  await installPage.goto(process.env.DSH_INSTALL_URL, { waitUntil: 'domcontentloaded' });
-  await dismissModals(installPage);
-  await installPage.getByText('远程访问', { exact: true }).first().waitFor({ timeout: 60_000 });
-  await installPage.getByRole('button', { name: '远程访问', exact: true }).first().click();
-  await installPage.getByText('一键安装 tailcat', { exact: true }).first().waitFor({ timeout: 30_000 });
-  const installCard = installPage.locator('section.tcr-card').filter({ hasText: '一键安装 tailcat' }).first();
-  await installCard.scrollIntoViewIfNeeded();
-  await installPage.waitForTimeout(500);
-  await installCard.screenshot({ path: path.join(outDir, '03-install.png') });
-  await installContext.close();
-}
 
 await browser.close();
 console.log('screenshots written to', outDir);
