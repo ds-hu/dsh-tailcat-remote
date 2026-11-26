@@ -11,6 +11,11 @@
 # directory. It publishes no Cordis service, so the row sits loose in the
 # Host root realm instead of an `isolate` group.
 #
+# The same row serves the Electron desktop profile
+# ($DSH_HOME/profiles/desktop). That Host listens on an OS-assigned loopback
+# port; the door resolves it per request, so `port` keeps its meaning there:
+# the virtual port inside tailcat, not the Web listener.
+#
 # Every field below is optional. Defaults are chosen for the common case
 # (Unix-socket door on Linux/macOS, loopback TCP on Windows; saved stable key;
 # allow-list off). Uncomment a field only when the machine needs a different

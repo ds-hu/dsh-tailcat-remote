@@ -11,6 +11,7 @@
 <p align="center">
   <a href="https://www.npmjs.com/package/@ds-hu/dsh-tailcat-remote"><img alt="npm" src="https://img.shields.io/npm/v/@ds-hu/dsh-tailcat-remote?color=0F766E"></a>
   <a href="https://github.com/ds-hu/dsh-tailcat-remote/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/ds-hu/dsh-tailcat-remote/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/ds-hu/dsh-tailcat-remote/actions/workflows/desktop-profile.yml"><img alt="Desktop profile" src="https://github.com/ds-hu/dsh-tailcat-remote/actions/workflows/desktop-profile.yml/badge.svg"></a>
   <a href="LICENSE"><img alt="license" src="https://img.shields.io/badge/license-MIT-0F766E"></a>
   <a href="README.en.md">English</a>
 </p>
@@ -21,7 +22,7 @@
 
 DeepSeek Harness 默认只在本机监听。想从笔记本、手机或另一台电脑打开同一个界面，通常要公网端口、端口转发或一层反向代理。
 
-远程访问把这件事收进一个插件：Host 负责托管 `tailcat` 进程和一条 tailnet-only 的本地门卫，客户端只需要 tailcat 地址和一行命令。
+远程访问把这件事收进一个插件：Host 负责托管 `tailcat` 进程和一条 tailnet-only 的本地门卫，客户端只需要 tailcat 地址和一行命令。同一份插件同时适用 `dsh web` 的 **web profile** 与桌面版（Electron）使用的 **desktop profile**。
 
 <p align="center">
   <img src="docs/screenshots/01-pairing.png" alt="远程访问页：运行中的隧道、默认遮罩的 tailcat 地址、显眼的显示二维码按钮和本地地址" width="820">
@@ -63,6 +64,42 @@ dsh plugin --profile web add @ds-hu/dsh-tailcat-remote
 
 也可以在 **插件管理** 里安装这个 bundle，效果相同。
 
+### 桌面版（Electron 桌面应用）
+
+桌面版运行的是名为 `desktop` 的 profile（`$DSH_HOME/profiles/desktop`），内容就是 Web 应用的同一套 bundle。它只监听 `127.0.0.1` 上由系统分配的**随机端口**，插件在运行时读取这个端口，**不需要任何端口配置**。
+
+1. 先打开一次桌面版，让它初始化 `desktop` profile，然后**完全退出**（Windows 上要从托盘图标退出）。
+2. 把插件装进 desktop profile，任选一种：
+   - **推荐**：在桌面版的 **插件管理** 里按包名安装 `@ds-hu/dsh-tailcat-remote`。应用会完成 pnpm 安装、把包写进 `dsh.profile.bundles`，并按提示重启生效。
+   - **手动**：编辑 `%USERPROFILE%\.dsh\profiles\desktop\package.json`，在 `dependencies` 与 `dsh.profile.bundles` 里各加一项：
+
+     ```json
+     {
+       "dependencies": { "@ds-hu/dsh-tailcat-remote": "^0.2.0" },
+       "dsh": {
+         "profile": {
+           "bundles": [
+             "@deepseek-ai/dsh-base",
+             "@deepseek-ai/dsh-web-app",
+             "@ds-hu/dsh-tailcat-remote"
+           ]
+         }
+       }
+     }
+     ```
+
+     然后在 `%USERPROFILE%\.dsh\profiles\desktop` 里运行 `pnpm install`，再打开桌面版。
+
+     用 npm 全局安装的 `dsh` 会拒绝 `--profile desktop`；桌面版自带的 `dsh` 命令（如果在应用里安装过）允许这个 profile，但它只做 pnpm 安装，**不会**把包写进 `dsh.profile.bundles`，所以手动路径要自己补上这一项。
+3. 侧边栏打开 **远程访问**，按下面的步骤安装 tailcat、出示地址；客户端 `tailcat forward` 后即可访问。
+
+**桌面版使用须知**
+
+- **关闭窗口不等于退出。** Windows 上关闭窗口后应用继续在系统托盘运行，远程访问保持可用；从托盘退出应用才会结束 Host，隧道随之断开。
+- **地址不变，重连即可。** 桌面版升级会重启 Host，隧道短暂中断；保存的 tailcat 密钥不变，客户端用同一个地址重新 `tailcat forward` 就行。
+- **远程访问看到的是普通 Web 界面。** 桌面专属能力（Browser 侧边栏标签、系统文件对话框、平台账号登录）只在桌面窗口内可用。
+- **不是多用户隔离。** 桌面窗口和远程浏览器共享同一个 Host、同一份凭据和同一个 agent 会话，只把地址给信任的人。
+
 ### tailcat 会自动安装
 
 重启 `dsh web` 后打开 **远程访问**。如果 Host 还没有 tailcat，页面会显示安装卡片：
@@ -101,6 +138,7 @@ dsh plugin --profile web add @ds-hu/dsh-tailcat-remote
 - 更换地址后，旧地址立即失效。已经拿到 DSH cookie 的浏览器不会自动退出，需要按 DSH 的会话管理单独处理。
 - 不要直接暴露 3080。在 Linux/macOS 上，插件只让 tailcat 通过一条 0600 的 Unix socket 访问 door；Windows 没有 tailcat Unix-socket 支持，默认使用仅绑定 `127.0.0.1` 的 TCP 端口，仍不对局域网或公网开放。
 - 如果 Web listener 是 HTTPS，door 会拒绝启动；当前版本不支持在 TLS 后面重放 cookie。
+- 桌面版没有额外的网络暴露：Host 仍只监听 `127.0.0.1` 的随机端口，door 在 Windows 上仍只绑定 `127.0.0.1:13080`。但桌面版通常常驻托盘，意味着隧道默认长期在线；从托盘退出应用即撤销这条访问路径。
 
 完整威胁模型、限制和检查清单见 [安全说明](docs/SECURITY.md)。
 
