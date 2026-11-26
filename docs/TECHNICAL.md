@@ -24,7 +24,7 @@ Host 插件
 
 - **Door** 是唯一能被 tailcat 访问的本地端点。默认是 `$DSH_HOME/tailcat-remote.sock`，权限 0600；`tailcat serve` 把虚拟端口 13080 映射到它。它不做自己的鉴权，而是把请求交给 DSH 的 `connection` 服务判断。这样远程访问与本地访问共用同一套 cookie、Host/Origin 校验和 owner 语义。
 - **TailcatSupervisor** 只负责一个子进程：确保可执行文件与保存密钥存在，拼出 argv，解析 stdout 地址与 stderr 访问日志，做崩溃重启和地址轮换。
-- **TailcatInstaller** 负责“用户到底装没装 tailcat”。它只做检测和显式安装：检测不会写文件；安装只在面板点击后发生。Linux/Windows 下载官方 release 资产并校验 SHA-256；macOS 通过 Homebrew；系统里已有的 tailcat 永远优先被识别，不会被下载覆盖。
+- **TailcatInstaller** 负责“用户到底装没装 tailcat”。它只做检测和显式安装：检测不会写文件；安装只在面板点击后发生。Linux/Windows 下载官方 release 资产并校验 SHA-256；macOS 先更新 Homebrew 再安装/升级 formula；系统里已有的 tailcat 永远优先被识别，不会被下载覆盖。Unix-socket door 依赖 tailcat 0.8.0 的 serve 目标语法，因此低于该版本会被标为不兼容并提示升级。
 - **RemoteAccess** 是门面。它串行化所有变更操作，向面板提供一份快照，避免“页面连续点两次启动”这类竞态。
 
 没有把 13080 直接开在 TCP 上。TCP `127.0.0.1` 仍对同机所有进程可见，Unix socket 的 0600 权限更小；tailcat 能在同机直接连 socket，不需要 TCP。配置保留 `listen: tcp` 只是为了诊断或在不支持 Unix socket 的环境里逃生。

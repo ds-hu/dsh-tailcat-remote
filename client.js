@@ -109,6 +109,7 @@ window.__ModuleLoader__.load({
       installDetected: '已检测到系统 tailcat',
       installDetectedBody: '版本 {version}，路径 {path}。插件会直接使用它，不需要重复安装。',
       installChecking: '正在检查系统是否已安装 tailcat…',
+      installSystemOutdated: '检测到的 tailcat {version} 不支持当前 Unix socket 门（需要 0.8.0 或更新）。可以一键安装受管版本，或先升级系统 tailcat。',
       installSystemMissing: '系统 PATH 中没有找到 tailcat。',
       installUnsupported: '当前平台 {platform}/{arch} 暂无自动安装。',
       installConfigOverride: 'binaryPath 当前为 {path}。一键安装只会写入受管目录，不会覆盖该配置；请改回 tailcat 或手动安装到该路径。',
@@ -242,6 +243,7 @@ window.__ModuleLoader__.load({
       installDetected: 'Existing tailcat detected',
       installDetectedBody: 'Version {version}, path {path}. The plugin uses it directly; no duplicate install is needed.',
       installChecking: 'Checking whether tailcat is already installed…',
+      installSystemOutdated: 'The detected tailcat {version} does not support the Unix-socket door (0.8.0 or newer is required). Install the managed copy or upgrade the system tailcat first.',
       installSystemMissing: 'No tailcat was found on the system PATH.',
       installUnsupported: 'Automatic installation is unavailable on {platform}/{arch}.',
       installConfigOverride: 'binaryPath is set to {path}. A managed install only writes the plugin directory and will not override that setting; set it back to tailcat or install manually at that path.',
@@ -667,6 +669,7 @@ window.__ModuleLoader__.load({
       const installer = snapshot.installer;
       const system = installer?.system;
       const systemFound = system?.status === 'found';
+      const systemCompatible = system?.compatible !== false;
       const configOverride = snapshot.config.binaryPath !== 'tailcat';
       const installerBusy = busy === 'install' || Boolean(installer?.busy);
       const anyBusy = Boolean(busy) || Boolean(installer?.busy);
@@ -801,7 +804,7 @@ window.__ModuleLoader__.load({
             ? h(Alert, { tone: 'danger', title: t('diagLastError') }, h('p', { className: 'tcr-mono' }, tailcat.lastError))
             : null,
 
-          !binaryMissing && systemFound && !installer?.installed
+          !binaryMissing && systemFound && systemCompatible && !installer?.installed
             ? h(
                 Alert,
                 { tone: 'info', title: t('installDetected') },
@@ -813,9 +816,11 @@ window.__ModuleLoader__.load({
             ? h(
                 Card,
                 {
-                  title: systemFound ? t('installDetected') : t('setupTitle'),
+                  title: systemFound && systemCompatible ? t('installDetected') : t('setupTitle'),
                   subtitle: systemFound
-                    ? t('installDetectedBody', { version: system.version ?? t('unknown'), path: system.path })
+                    ? systemCompatible
+                      ? t('installDetectedBody', { version: system.version ?? t('unknown'), path: system.path })
+                      : t('installSystemOutdated', { version: system.version ?? t('unknown') })
                     : system?.status === 'checking' || !system
                       ? t('installChecking')
                       : t('setupBody'),
@@ -826,7 +831,7 @@ window.__ModuleLoader__.load({
                 configOverride
                   ? h(Alert, { tone: 'warn', title: t('setupTitle') }, t('installConfigOverride', { path: snapshot.config.binaryPath }))
                   : null,
-                !systemFound && installer?.supported && !configOverride
+                (!systemFound || !systemCompatible) && installer?.supported && !configOverride
                   ? h(
                       'p',
                       { className: 'tcr-hint' },
@@ -845,7 +850,7 @@ window.__ModuleLoader__.load({
                 h(
                   'div',
                   { className: 'tcr-actions' },
-                  !systemFound && installer?.supported && !configOverride
+                  (!systemFound || !systemCompatible) && installer?.supported && !configOverride
                     ? h(
                         Button,
                         {

@@ -13,6 +13,8 @@ export const TAILCAT_VERSION = '0.8.0';
 export const TAILCAT_TAG = 'v0.8.0';
 export const UPSTREAM_RELEASES = `https://github.com/tailscale/tailcat/releases/download/${TAILCAT_TAG}`;
 export const MANUAL_INSTALL_URL = 'https://github.com/tailscale/tailcat#install';
+/** Minimum tailcat release: Unix-socket serve targets arrived in 0.8.0. */
+export const MIN_TAILCAT_VERSION = '0.8.0';
 
 const MAX_ARCHIVE_BYTES = 64 * 1024 * 1024;
 const MAX_TEXT_BYTES = 512 * 1024;
@@ -112,6 +114,31 @@ export async function sha256File(file) {
   const hash = crypto.createHash('sha256');
   for await (const chunk of fs.createReadStream(file)) hash.update(chunk);
   return hash.digest('hex');
+}
+
+/**
+ * Parse a semantic version out of `tailcat version` output.
+ * @param {string | null | undefined} value - version text.
+ * @returns {[number, number, number] | null} numeric triple.
+ */
+export function versionParts(value) {
+  const match = /(\d+)\.(\d+)\.(\d+)/.exec(String(value ?? ''));
+  return match ? [Number(match[1]), Number(match[2]), Number(match[3])] : null;
+}
+
+/**
+ * @param {string | null | undefined} version - candidate.
+ * @param {string} minimum - required semantic version.
+ * @returns {boolean} whether candidate is at least minimum.
+ */
+export function versionAtLeast(version, minimum) {
+  const left = versionParts(version);
+  const right = versionParts(minimum);
+  if (!left || !right) return false;
+  for (let index = 0; index < 3; index += 1) {
+    if (left[index] !== right[index]) return left[index] > right[index];
+  }
+  return true;
 }
 
 /**
@@ -247,6 +274,7 @@ export class TailcatInstaller {
       status: 'found',
       path: resolved,
       version,
+      compatible: version ? versionAtLeast(version, MIN_TAILCAT_VERSION) : null,
       checkedAt: new Date().toISOString(),
     };
     return this.system;
@@ -362,6 +390,7 @@ export class TailcatInstaller {
 
     this.phase = 'installing';
     const version = await this.probe(candidate);
+    this.ensureCompatible(version);
     const installedAt = new Date().toISOString();
     await this.replaceBinary(candidate);
     await this.writeMetadata({
@@ -389,14 +418,41 @@ export class TailcatInstaller {
     }
     this.phase = 'homebrew';
     this.progress = { phase: 'homebrew', received: 0, total: 0, percent: null };
-    await this.runCommand([brew, 'install', 'tailcat'], {
-      timeoutMs: BREW_TIMEOUT_MS,
-      env: {
-        HOMEBREW_NO_INSTALL_CLEANUP: '1',
-        NONINTERACTIVE: '1',
-      },
-      signal,
-    });
+    try {
+      await this.runCommand([brew, 'update'], {
+        timeoutMs: 10 * 60_000,
+        env: {
+          HOMEBREW_NO_INSTALL_CLEANUP: '1',
+          NONINTERACTIVE: '1',
+        },
+        signal,
+      });
+    } catch (error) {
+      if (signal.aborted) throw error;
+      this.logger.warn(`tailcat-remote: brew update failed, continuing with the local formula: ${errorMessage(error)}`);
+    }
+    const installArgs = this.system?.compatible === false ? ['upgrade', 'tailcat'] : ['install', 'tailcat'];
+    try {
+      await this.runCommand([brew, ...installArgs], {
+        timeoutMs: BREW_TIMEOUT_MS,
+        env: {
+          HOMEBREW_NO_INSTALL_CLEANUP: '1',
+          NONINTERACTIVE: '1',
+        },
+        signal,
+      });
+    } catch (error) {
+      if (installArgs[0] !== 'upgrade' || signal.aborted) throw error;
+      this.logger.warn(`tailcat-remote: brew upgrade failed, trying a fresh install: ${errorMessage(error)}`);
+      await this.runCommand([brew, 'install', 'tailcat'], {
+        timeoutMs: BREW_TIMEOUT_MS,
+        env: {
+          HOMEBREW_NO_INSTALL_CLEANUP: '1',
+          NONINTERACTIVE: '1',
+        },
+        signal,
+      });
+    }
     const prefix = await this.runCommand([brew, '--prefix', 'tailcat'], {
       timeoutMs: COMMAND_TIMEOUT_MS,
       signal,
@@ -416,6 +472,7 @@ export class TailcatInstaller {
     const staged = path.join(staging, this.spec.binary);
     await fsp.copyFile(candidate, staged);
     const version = await this.probe(staged);
+    this.ensureCompatible(version);
     const installedAt = new Date().toISOString();
     await this.replaceBinary(staged);
     await this.writeMetadata({
@@ -582,6 +639,17 @@ export class TailcatInstaller {
     }
     const match = /v?(\d+\.\d+\.\d+)/.exec(`${result.stdout}\n${result.stderr}`);
     return match ? (match[0].startsWith('v') ? match[0] : `v${match[0]}`) : null;
+  }
+
+  /** @private */
+  ensureCompatible(version) {
+    if (version && !versionAtLeast(version, MIN_TAILCAT_VERSION)) {
+      throw new RemoteAccessError(
+        'tailcat-version-too-old',
+        `tailcat ${version} is too old for the Unix-socket door; ${MIN_TAILCAT_VERSION} or newer is required. Update tailcat and retry.`,
+        503,
+      );
+    }
   }
 
   /** @private */

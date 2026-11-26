@@ -291,6 +291,13 @@ export class TailcatSupervisor {
       void this.loadVersion();
       return;
     }
+    if (requested === 'tailcat' && this.installer?.system?.compatible === false) {
+      throw new RemoteAccessError(
+        'tailcat-version-too-old',
+        `The installed tailcat ${this.installer.system.version ?? ''} is too old for the Unix-socket door; install the managed version from Remote Access or upgrade tailcat to 0.8.0 or newer.`,
+        503,
+      );
+    }
     try {
       let resolved = null;
       try {

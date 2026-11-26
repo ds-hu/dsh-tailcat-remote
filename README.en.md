@@ -67,9 +67,9 @@ Installing the bundle from **Plugin Manager** has the same effect.
 Restart `dsh web` and open **Remote Access**. If the Host has no tailcat, the page shows an install card:
 
 - **Linux / Windows:** click **Install tailcat**. The plugin selects the official tailcat v0.8.0 asset for `process.arch`, downloads it, verifies its SHA-256 against the official `checksums.txt`, and extracts it to `$DSH_HOME/tailcat-remote/bin/`. The system `PATH` is not modified.
-- **macOS:** if Homebrew is available, the same button runs `brew install tailcat` and copies the executable into the managed directory. Without Homebrew, the page shows a clear message and a manual-install link.
+- **macOS:** if Homebrew is available, the same button updates Homebrew and installs/upgrades tailcat (0.8.0 or newer), then copies the executable into the managed directory. Without Homebrew, the page shows a clear message and a manual-install link.
 - **Your own tailcat:** on startup the plugin checks `PATH` and common package locations (`/opt/homebrew/bin`, `/usr/local/bin`, `/usr/bin`, and so on). It uses an existing install directly and never downloads over it. The diagnostics section shows the executable's source and version.
-- **Other platforms or architectures:** install tailcat manually from [the upstream instructions](https://github.com/tailscale/tailcat#install), then point `binaryPath` at it. `binaryPath` takes precedence over the managed copy.
+- **Other platforms or architectures:** install tailcat manually (0.8.0 or newer) from [the upstream instructions](https://github.com/tailscale/tailcat#install), then point `binaryPath` at it. `binaryPath` takes precedence over the managed copy.
 
 The managed install only runs after you click the button: there is no background download and no per-platform binary payload in the npm package.
 
