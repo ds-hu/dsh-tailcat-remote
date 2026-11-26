@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-const profileDir = path.join(os.homedir(), '.dsh', 'profiles', process.env.DSH_PROFILE ?? 'shots');
+const profileDir = path.join(os.homedir(), '.dsh', 'profiles', process.env.DSH_PROFILE ?? 'web');
 const packagePath = path.join(profileDir, 'package.json');
 const packageJson = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
 

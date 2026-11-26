@@ -32,12 +32,12 @@ jobs:
 
       - name: Prepare a throwaway web profile
         env:
-          DSH_PROFILE: shots
+          DSH_PROFILE: web
         run: |
-          dsh --profile shots --from-default-profile web --dump-config > /dev/null
-          dsh plugin --profile shots add "$GITHUB_WORKSPACE"
+          dsh --profile web --from-default-profile web --dump-config > /dev/null
+          dsh plugin --profile web add "$GITHUB_WORKSPACE"
           node scripts/ci/prepare-profile.mjs
-          node -e "const p=require(process.env.HOME+'/.dsh/profiles/shots/package.json'); console.log(p.dsh.profile.bundles)"
+          node -e "const p=require(process.env.HOME+'/.dsh/profiles/web/package.json'); console.log(p.dsh.profile.bundles)"
 
       - name: Install Playwright Chromium
         run: |
@@ -46,7 +46,7 @@ jobs:
 
       - name: Boot Harness and capture the token URL
         run: |
-          nohup dsh --profile shots --no-open --host 127.0.0.1 --port 3099 > "$RUNNER_TEMP/dsh.log" 2>&1 &
+          nohup dsh --profile web --no-open --host 127.0.0.1 --port 3099 > "$RUNNER_TEMP/dsh.log" 2>&1 &
           echo $! > "$RUNNER_TEMP/dsh.pid"
           url=""
           for _ in $(seq 1 120); do
@@ -79,7 +79,7 @@ jobs:
           for candidate in /usr/local/bin/tailcat /usr/bin/tailcat /bin/tailcat /snap/bin/tailcat; do
             if [ -x "$candidate" ]; then echo "unexpected tailcat at $candidate"; exit 1; fi
           done
-          nohup dsh --profile shots --no-open --host 127.0.0.1 --port 3100 > "$RUNNER_TEMP/dsh-install.log" 2>&1 &
+          nohup dsh --profile web --no-open --host 127.0.0.1 --port 3100 > "$RUNNER_TEMP/dsh-install.log" 2>&1 &
           echo $! > "$RUNNER_TEMP/dsh-install.pid"
           url=""
           for _ in $(seq 1 120); do
