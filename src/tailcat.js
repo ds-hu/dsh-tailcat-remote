@@ -675,7 +675,21 @@ export class TailcatSupervisor {
 /** Environment needed by tailcat's key path and DERP cache discovery. */
 function childEnv() {
   const env = { HOME: os.homedir() };
-  for (const name of ['XDG_CONFIG_HOME', 'XDG_CACHE_HOME', 'XDG_DATA_HOME']) {
+  // tailcat resolves saved keys through Go's os.UserConfigDir: XDG on Linux,
+  // Application Support on macOS, and %AppData% on Windows. Forward the
+  // platform roots it needs, plus the usual temp locations for its caches.
+  for (const name of [
+    'PATH',
+    'APPDATA',
+    'LOCALAPPDATA',
+    'USERPROFILE',
+    'SYSTEMROOT',
+    'TEMP',
+    'TMP',
+    'XDG_CONFIG_HOME',
+    'XDG_CACHE_HOME',
+    'XDG_DATA_HOME',
+  ]) {
     const value = process.env[name];
     if (value) env[name] = value;
   }

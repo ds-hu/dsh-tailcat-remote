@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import net from 'node:net';
+import { tailcatKeyPath } from '../../src/paths.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -144,10 +145,29 @@ try {
     console.log((probe.stdout || probe.stderr).trim());
   }
 
-  await verifyServe(binary, root);
-  console.log('[installer] tailcat serve accepted the local door target');
+  await verifySavedKey(binary, root);
+  console.log('[installer] tailcat serve accepted the local door target with a saved key');
 } finally {
   fs.rmSync(root, { recursive: true, force: true });
+}
+
+/**
+ * Generate a saved key at the path the Host resolves, then start a local
+ * door-like listener through it. This catches key-path, go os.UserConfigDir,
+ * and serve-spec regressions that a version probe cannot.
+ * @param {string} binary - installed tailcat path.
+ * @param {string} root - throwaway data root.
+ */
+async function verifySavedKey(binary, root) {
+  const keyName = `dsh-smoke-${process.pid}`;
+  const keyFile = tailcatKeyPath(keyName);
+  await runCommand([binary, 'genkey', '--key=' + keyName, '--fixed-region'], { timeoutMs: 120_000 });
+  assert.equal(fs.existsSync(keyFile), true, `tailcat genkey did not create ${keyFile}`);
+  try {
+    await verifyServe(binary, root, keyName);
+  } finally {
+    fs.rmSync(keyFile, { force: true });
+  }
 }
 
 /**
@@ -156,8 +176,9 @@ try {
  * version probe cannot.
  * @param {string} binary - installed tailcat path.
  * @param {string} root - throwaway data root.
+ * @param {string} [keyName] - saved key name or "new" for an ephemeral key.
  */
-async function verifyServe(binary, root) {
+async function verifyServe(binary, root, keyName = 'new') {
   const useSocket = process.platform !== 'win32';
   const socketPath = path.join(root, 'door.sock');
   const server = net.createServer((socket) => socket.destroy());
@@ -168,7 +189,7 @@ async function verifyServe(binary, root) {
   });
   const port = server.address().port;
   const target = useSocket ? `13080:${socketPath}` : `${port}:127.0.0.1:${port}`;
-  const child = spawn(binary, ['--json', '--key=new', 'serve', '--log', target], {
+  const child = spawn(binary, ['--json', `--key=${keyName}`, 'serve', '--log', target], {
     cwd: root,
     env: { ...process.env },
     windowsHide: true,

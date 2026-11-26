@@ -67,7 +67,7 @@ dsh plugin --profile web add @ds-hu/dsh-tailcat-remote
 重启 `dsh web` 后打开 **远程访问**。如果 Host 还没有 tailcat，页面会显示安装卡片：
 
 - **Linux / Windows**：点 **一键安装 tailcat**。插件会按 `process.arch` 选择 tailcat 官方 v0.8.0 release 资产，下载后用官方 `checksums.txt` 校验 SHA-256，再解压到 `$DSH_HOME/tailcat-remote/bin/`。不修改系统 `PATH`。
-- **macOS**：如果 Host 有 Homebrew，点同一个按钮会先更新 Homebrew，再安装/升级 tailcat（需要 0.8.0 或更新），然后把可执行文件复制到受管目录。没有 Homebrew 时，页面会给出明确提示和手动安装链接。
+- **macOS**：如果 Host 有 Homebrew，点同一个按钮会先更新 Homebrew，再安装/升级 tailcat（需要 0.8.0 或更新），然后把可执行文件复制到受管目录。Intel Mac 没有现成 bottle，Homebrew 会从源码构建，可能比 Apple Silicon 慢几分钟。没有 Homebrew 时，页面会给出明确提示和手动安装链接。
 - **已经自己安装过 tailcat**：插件启动时会检查 `PATH`，以及 `/opt/homebrew/bin`、`/usr/local/bin`、`/usr/bin` 等常见位置。检测到就直接使用，不会下载，也不会覆盖你的安装。诊断区会显示可执行文件来源和版本。
 - **其他平台或架构**：自动安装不可用时，按 [tailcat 安装说明](https://github.com/tailscale/tailcat#install) 手动安装（需要 0.8.0 或更新），再用 `binaryPath` 指向它。`binaryPath` 的优先级高于受管安装。
 

@@ -28,10 +28,28 @@ export function defaultSocketPath() {
   return path.join(dshHome(), 'tailcat-remote.sock');
 }
 
-/** The platform user-config directory tailcat uses for saved keys. */
-export function userConfigDir() {
-  const configured = process.env.XDG_CONFIG_HOME?.trim();
-  return configured ? path.resolve(configured) : path.join(os.homedir(), '.config');
+/** @param {string} value - possibly relative config root. @param {string} home - tailcat cwd. @returns {string} absolute path. */
+function resolveFromHome(value, home) {
+  return path.isAbsolute(value) ? value : path.resolve(home, value);
+}
+
+/**
+ * The platform user-config directory tailcat uses for saved keys. This must
+ * match Go's os.UserConfigDir: macOS uses Application Support and Windows
+ * uses %AppData%, even when XDG_CONFIG_HOME is set.
+ * @param {string} [platform] - Node platform.
+ * @param {NodeJS.ProcessEnv} [env] - environment.
+ * @param {string} [home] - home directory.
+ * @returns {string} absolute config root.
+ */
+export function userConfigDir(platform = process.platform, env = process.env, home = os.homedir()) {
+  if (platform === 'win32') {
+    const configured = env.APPDATA?.trim();
+    return configured ? resolveFromHome(configured, home) : path.join(home, 'AppData', 'Roaming');
+  }
+  if (platform === 'darwin') return path.join(home, 'Library', 'Application Support');
+  const configured = env.XDG_CONFIG_HOME?.trim();
+  return configured ? resolveFromHome(configured, home) : path.join(home, '.config');
 }
 
 /** Common package-manager locations for a user-installed tailcat. */
@@ -66,14 +84,18 @@ export function findKnownTailcat(platform = process.platform) {
  * Resolve a tailcat key name or path to the saved-key file tailcat reads.
  * A name maps to `<user config>/tailcat/keys/<name>.private.json`; a value
  * carrying a separator is treated as a path, matching tailcat's own rule.
+ * Relative paths resolve from the supervisor's cwd (the home directory).
  * @param {string} keyName - configured key name or path.
+ * @param {string} [platform] - Node platform.
+ * @param {NodeJS.ProcessEnv} [env] - environment.
+ * @param {string} [home] - home directory.
  * @returns {string} absolute key file path.
  */
-export function tailcatKeyPath(keyName) {
-  if (keyName.includes('/') || keyName.includes(path.sep)) {
-    return path.isAbsolute(keyName) ? keyName : path.resolve(os.homedir(), keyName);
+export function tailcatKeyPath(keyName, platform = process.platform, env = process.env, home = os.homedir()) {
+  if (keyName.includes('/') || keyName.includes('\\')) {
+    return path.isAbsolute(keyName) ? keyName : path.resolve(home, keyName);
   }
-  return path.join(userConfigDir(), 'tailcat', 'keys', `${keyName}.private.json`);
+  return path.join(userConfigDir(platform, env, home), 'tailcat', 'keys', `${keyName}.private.json`);
 }
 
 /**

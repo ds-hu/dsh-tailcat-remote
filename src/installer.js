@@ -747,7 +747,18 @@ export class TailcatInstaller {
  */
 function baseEnv() {
   const env = { HOME: os.homedir() };
-  for (const name of ['PATH', 'XDG_CONFIG_HOME', 'XDG_CACHE_HOME', 'XDG_DATA_HOME']) {
+  for (const name of [
+    'PATH',
+    'APPDATA',
+    'LOCALAPPDATA',
+    'USERPROFILE',
+    'SYSTEMROOT',
+    'TEMP',
+    'TMP',
+    'XDG_CONFIG_HOME',
+    'XDG_CACHE_HOME',
+    'XDG_DATA_HOME',
+  ]) {
     const value = process.env[name];
     if (value) env[name] = value;
   }

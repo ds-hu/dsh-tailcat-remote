@@ -64,7 +64,7 @@ tailcat genkey --client --key=client-default
 - **只在用户点击时联网。** 插件没有 postinstall 脚本，不会在后台下载；安装动作必须在面板点击，或在已认证的 owner API 上显式调用 `install`。
 - **Linux / Windows：** 从 `https://github.com/tailscale/tailcat/releases/tag/v0.8.0` 下载与当前 `process.platform`/`process.arch` 对应的官方资产，并从同一个 release 读取 `checksums.txt`。下载完成后先校验 SHA-256，校验不通过就删除临时文件并保留旧版本。HTTPS 保护传输，校验值保护下载完整性；如果上游 release 本身被攻破，校验值也会一起被改，插件无法提供超过上游的保证。
 - **macOS：** 先执行 `brew update`，再通过 Homebrew 安装/升级 `tailcat` formula；信任 Homebrew 的 formula、bottle 或源码构建链。没有 Homebrew 时不会尝试其他来源，而是提示手动安装。
-- **用户已有的 tailcat：** 启动时只读取和探测 `PATH`、Homebrew 前缀等常见位置，不移动、不覆盖、不升级。检测到 0.8.0 或更新的系统版本时，面板不再显示下载按钮；更旧的版本会被标为不兼容，由用户选择升级或安装受管副本。
+- **用户已有的 tailcat：** 检测和正常启动只读取、探测 `PATH`、Homebrew 前缀等常见位置，不移动、不覆盖、不升级。检测到 0.8.0 或更新的系统版本时，面板不再显示下载按钮；更旧的版本会被标为不兼容。只有用户点击安装后，macOS 才会通过 Homebrew 升级过旧的系统 formula（因为 macOS 没有官方静态二进制），Linux/Windows 则新建受管副本、不动系统安装。
 - **写入位置：** 受管可执行文件固定在 `$DSH_HOME/tailcat-remote/bin/tailcat`（Windows 为 `tailcat.exe`），模式 0755；临时下载目录权限 0700；元数据 `tailcat.json` 权限 0600；替换采用同目录备份 + 原子 rename。系统 `PATH` 不会被修改，也不会向系统目录写入任何文件。
 - **执行权限：** 受管 tailcat 与 Host 使用同一个 OS 用户运行，因此拥有该用户的权限。不要把 `binaryPath` 指向可被其他用户写入的路径。
 
