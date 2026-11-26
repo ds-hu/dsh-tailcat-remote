@@ -94,7 +94,7 @@ dsh plugin --profile web add @ds-hu/dsh-tailcat-remote
 
 - 给地址配白名单：客户端运行 `tailcat genkey --client --key=client-default`，把打印的公钥加进页面。
 - 更换地址后，旧地址立即失效。已经拿到 DSH cookie 的浏览器不会自动退出，需要按 DSH 的会话管理单独处理。
-- 不要直接暴露 3080。插件只让 tailcat 通过一条 0600 的 Unix socket 访问 door，不监听公网。
+- 不要直接暴露 3080。在 Linux/macOS 上，插件只让 tailcat 通过一条 0600 的 Unix socket 访问 door；Windows 没有 tailcat Unix-socket 支持，默认使用仅绑定 `127.0.0.1` 的 TCP 端口，仍不对局域网或公网开放。
 - 如果 Web listener 是 HTTPS，door 会拒绝启动；当前版本不支持在 TLS 后面重放 cookie。
 
 完整威胁模型、限制和检查清单见 [安全说明](docs/SECURITY.md)。

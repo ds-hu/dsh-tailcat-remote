@@ -3,10 +3,14 @@ import z from '@deepseek-ai/schemastery';
 /** Virtual port tailcat exposes to clients. */
 export const DEFAULT_PORT = 13080;
 
+/** Windows has no Unix-domain socket support in tailcat; use loopback TCP there. */
+export const DEFAULT_LISTEN = process.platform === 'win32' ? 'tcp' : 'socket';
+
 /**
  * Host config. Every field is optional; the defaults describe the secure
- * common case: a Unix-socket door under DSH_HOME, a saved stable key, and no
- * device-key allow-list (the address stays the only credential).
+ * common case: a Unix-socket door under DSH_HOME (loopback TCP on Windows,
+ * where tailcat has no Unix-socket target support), a saved stable key, and
+ * no device-key allow-list (the address stays the only credential).
  */
 export const Config = z.object({
   binaryPath: z
@@ -21,9 +25,9 @@ export const Config = z.object({
     .description('Virtual port inside the tailcat tunnel. Clients reach the Harness on this port; it is not opened on this machine.'),
   listen: z
     .union([z.const('socket'), z.const('tcp')])
-    .default('socket')
+    .default(DEFAULT_LISTEN)
     .description(
-      'Where the door listens locally. socket creates a 0600 Unix socket under DSH_HOME and is reachable only by tailcat. tcp binds 127.0.0.1 and is also reachable by any local process; use it only when a socket cannot be used.',
+      'Where the door listens locally. socket creates a 0600 Unix socket under DSH_HOME and is reachable only by tailcat; it is unsupported on Windows. tcp binds 127.0.0.1 and is also reachable by any local process. Windows defaults to tcp.',
     ),
   socketPath: z
     .string()
@@ -80,7 +84,7 @@ export function resolveConfig(input) {
   return {
     binaryPath: nonEmpty(value.binaryPath) ?? 'tailcat',
     port,
-    listen: value.listen === 'tcp' ? 'tcp' : 'socket',
+    listen: value.listen === 'tcp' ? 'tcp' : value.listen === 'socket' ? 'socket' : DEFAULT_LISTEN,
     socketPath: nonEmpty(value.socketPath) ?? '',
     keyName: nonEmpty(value.keyName) ?? 'dsh-tailcat',
     addressMode: value.addressMode === 'ephemeral' ? 'ephemeral' : 'stable',

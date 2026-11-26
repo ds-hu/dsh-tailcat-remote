@@ -1,12 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { Config, DEFAULT_PORT, resolveConfig, configView } from '../src/config.js';
+import { Config, DEFAULT_LISTEN, DEFAULT_PORT, resolveConfig, configView } from '../src/config.js';
 
 test('Config defaults describe the safe common case', () => {
   const config = Config({});
   assert.equal(config.binaryPath, 'tailcat');
   assert.equal(config.port, DEFAULT_PORT);
-  assert.equal(config.listen, 'socket');
+  assert.equal(config.listen, DEFAULT_LISTEN);
   assert.equal(config.socketPath, '');
   assert.equal(config.keyName, 'dsh-tailcat');
   assert.equal(config.addressMode, 'stable');
@@ -42,7 +42,7 @@ test('resolveConfig repairs malformed rows instead of throwing', () => {
 
   assert.equal(config.binaryPath, 'tailcat');
   assert.equal(config.port, DEFAULT_PORT);
-  assert.equal(config.listen, 'socket');
+  assert.equal(config.listen, DEFAULT_LISTEN);
   assert.equal(config.keyName, 'dsh-tailcat');
   assert.equal(config.addressMode, 'stable');
   assert.equal(config.maxRestartAttempts, 100);

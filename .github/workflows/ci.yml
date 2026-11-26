@@ -11,12 +11,13 @@ permissions:
 
 jobs:
   check:
-    name: Node ${{ matrix.node }} checks
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+    name: Node ${{ matrix.node }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
         node: ['20', '22']
     steps:
       - uses: actions/checkout@v4

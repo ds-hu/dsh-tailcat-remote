@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
+import net from 'node:net';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -124,8 +125,11 @@ try {
 
   const system = await installer.detectSystem();
   console.log(`[installer] platform=${process.platform}/${process.arch} system=${JSON.stringify(system)}`);
+  let binary;
   if (system.status === 'found') {
     assert.equal(typeof system.path, 'string');
+    assert.notEqual(system.compatible, false, 'the preinstalled tailcat is too old for the door');
+    binary = system.path;
     console.log('[installer] pre-existing tailcat detected; the managed installer must not replace it');
   } else {
     assert.equal(installer.snapshot().supported, true, 'the CI platform must have an automatic install path');
@@ -133,11 +137,77 @@ try {
     assert.equal(installed.installed, true);
     assert.equal(fs.existsSync(installer.binaryPath), true);
     assert.equal(installed.phase, 'done');
-    const probe = await runCommand([installer.binaryPath, 'version'], { timeoutMs: 20_000 });
+    binary = installer.binaryPath;
+    const probe = await runCommand([binary, 'version'], { timeoutMs: 20_000 });
     assert.match(`${probe.stdout}\n${probe.stderr}`, /v?\d+\.\d+\.\d+/);
-    console.log(`[installer] installed ${installed.installedVersion ?? 'unknown version'} at ${installer.binaryPath}`);
+    console.log(`[installer] installed ${installed.installedVersion ?? 'unknown version'} at ${binary}`);
     console.log((probe.stdout || probe.stderr).trim());
   }
+
+  await verifyServe(binary, root);
+  console.log('[installer] tailcat serve accepted the local door target');
 } finally {
   fs.rmSync(root, { recursive: true, force: true });
+}
+
+/**
+ * Start a local door-like listener and let the real tailcat validate/proxy to
+ * it. This catches serve-spec regressions (Unix socket vs Windows TCP) that a
+ * version probe cannot.
+ * @param {string} binary - installed tailcat path.
+ * @param {string} root - throwaway data root.
+ */
+async function verifyServe(binary, root) {
+  const useSocket = process.platform !== 'win32';
+  const socketPath = path.join(root, 'door.sock');
+  const server = net.createServer((socket) => socket.destroy());
+  await new Promise((resolve, reject) => {
+    server.once('error', reject);
+    if (useSocket) server.listen(socketPath, resolve);
+    else server.listen({ host: '127.0.0.1', port: 0 }, resolve);
+  });
+  const target = useSocket ? `13080:${socketPath}` : String(server.address().port);
+  const child = spawn(binary, ['--json', '--key=new', 'serve', '--log', target], {
+    cwd: root,
+    env: { ...process.env },
+    windowsHide: true,
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  let output = '';
+  child.stdout.on('data', (chunk) => {
+    output += chunk.toString();
+  });
+  child.stderr.on('data', (chunk) => {
+    output += chunk.toString();
+  });
+  try {
+    await new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error(`tailcat serve did not report an address:\n${output.slice(-4000)}`)), 90_000);
+      const check = () => {
+        if (/tc[A-Za-z0-9]{8,}/.test(output)) {
+          clearTimeout(timer);
+          resolve();
+        }
+      };
+      child.stdout.on('data', check);
+      child.stderr.on('data', check);
+      child.once('error', (error) => {
+        clearTimeout(timer);
+        reject(error);
+      });
+      child.once('exit', (code, signal) => {
+        clearTimeout(timer);
+        reject(new Error(`tailcat serve exited with ${code ?? signal} before reporting an address:\n${output.slice(-4000)}`));
+      });
+    });
+  } finally {
+    child.kill('SIGKILL');
+    await new Promise((resolve) => {
+      if (child.exitCode !== null) return resolve();
+      child.once('exit', resolve);
+      setTimeout(resolve, 5_000).unref?.();
+    });
+    await new Promise((resolve) => server.close(resolve));
+    if (useSocket) fs.rmSync(socketPath, { force: true });
+  }
 }

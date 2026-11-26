@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as plugin from '../index.js';
+import { DEFAULT_LISTEN } from '../src/config.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
@@ -17,7 +18,7 @@ test('the Host entry exports the Loader identity and its service requirements', 
 
 test('the Host Config has safe defaults before the Loader validates a row', () => {
   const config = plugin.Config({});
-  assert.equal(config.listen, 'socket');
+  assert.equal(config.listen, DEFAULT_LISTEN);
   assert.equal(config.addressMode, 'stable');
   assert.equal(config.autoStart, true);
   assert.equal(config.port, 13_080);

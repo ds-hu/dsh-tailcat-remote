@@ -53,7 +53,9 @@ test('the device store persists a canonical, mode-0600 allow-list', () => {
     const document = JSON.parse(fs.readFileSync(path.join(dir, 'devices.json'), 'utf8'));
     assert.equal(document.version, 1);
     assert.deepEqual(document.allow, [`nodekey:${HEX}`]);
-    assert.equal(fs.statSync(path.join(dir, 'devices.json')).mode & 0o777, 0o600);
+    if (process.platform !== 'win32') {
+      assert.equal(fs.statSync(path.join(dir, 'devices.json')).mode & 0o777, 0o600);
+    }
 
     const reloaded = createDeviceStore({ dir }).snapshot();
     assert.deepEqual(reloaded.allow, [`nodekey:${HEX}`]);

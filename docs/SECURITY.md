@@ -73,7 +73,7 @@ tailcat genkey --client --key=client-default
 ## 已知限制
 
 - **Door 只支持明文 HTTP 的 Web listener。** 如果 DSH 配置了 TLS，插件拒绝启动 door（`door-tls-unsupported`）。原因是没有可重放的 `Set-Cookie` 语义：远程客户端看到的是 `http://127.0.0.1:18080`，把 `Secure` cookie 直接搬过去会失效。要在 TLS 场景使用，应让 tailcat 映射到一个明确终止 TLS 的反向代理，并单独评估 cookie 属性；当前版本不提供这个模式。
-- **`listen: tcp` 会扩大本机可达面。** 绑定 `127.0.0.1` 后，本机任何进程都能访问 door；Unix socket 0600 是默认值。除非 Unix socket 不可用，不要改成 tcp。
+- **`listen: tcp` 会扩大本机可达面。** 绑定 `127.0.0.1` 后，本机任何进程都能访问 door；Unix socket 0600 是 Linux/macOS 的默认值。Windows 因 tailcat 不支持 Unix socket 目标而默认 tcp；不要把该端口转发到局域网。
 - **tailcat 自身的信任假设。** 插件信任 tailcat 二进制、它的 DERP map、本机代理配置和本机用户环境。请从可信来源安装 tailcat，并保持更新。
 - **访问日志是诊断数据。** `--log` 会记录 peer 公钥前缀/后缀、端口、路径和时长；插件对地址和完整 nodekey 做脱敏，但日志仍可能透露连接时间与设备数量。关闭 `logAccess` 可减少记录。
 - **二维码等同地址。** 二维码只编码 tailcat 地址；截图、投屏或转发二维码与转发地址等价。

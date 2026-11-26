@@ -104,7 +104,7 @@ sequenceDiagram
 | --- | --- | --- |
 | `binaryPath` | `tailcat` | PATH 名或绝对路径。默认值允许受管安装；显式路径优先，且会禁用在页面里覆盖它。 |
 | `port` | `13080` | tailcat 隧道内的虚拟端口，不是本机监听端口。 |
-| `listen` | `socket` | `socket` 使用 0600 Unix socket；`tcp` 绑定 `127.0.0.1:<port>`。 |
+| `listen` | Linux/macOS 为 `socket`，Windows 为 `tcp` | `socket` 使用 0600 Unix socket；`tcp` 绑定 `127.0.0.1:<port>`。tailcat 在 Windows 不支持 Unix socket 目标，所以 Windows 默认走回环 TCP。 |
 | `socketPath` | 空 | 空表示 `$DSH_HOME/tailcat-remote.sock`。 |
 | `keyName` | `dsh-tailcat` | 保存密钥名；带 `/` 时按路径处理。 |
 | `addressMode` | `stable` | `stable` 重启不变；`ephemeral` 每次启动换地址。 |
