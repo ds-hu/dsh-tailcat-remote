@@ -166,7 +166,8 @@ async function verifyServe(binary, root) {
     if (useSocket) server.listen(socketPath, resolve);
     else server.listen({ host: '127.0.0.1', port: 0 }, resolve);
   });
-  const target = useSocket ? `13080:${socketPath}` : String(server.address().port);
+  const port = server.address().port;
+  const target = useSocket ? `13080:${socketPath}` : `${port}:127.0.0.1:${port}`;
   const child = spawn(binary, ['--json', '--key=new', 'serve', '--log', target], {
     cwd: root,
     env: { ...process.env },

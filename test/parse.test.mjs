@@ -114,7 +114,7 @@ test('buildServeArgs puts root flags before the subcommand and allow-list before
       logAccess: false,
       derpMapUrl: 'https://derp.example/map.json',
     }),
-    ['tailcat', '--json', '--derpmap-url=https://derp.example/map.json', '--key=new', 'serve', '14000'],
+    ['tailcat', '--json', '--derpmap-url=https://derp.example/map.json', '--key=new', 'serve', '14000:127.0.0.1:14000'],
   );
 });
 

@@ -117,7 +117,7 @@ export function buildServeArgs(input) {
   const allow = Array.isArray(input.allow) ? input.allow.filter((key) => typeof key === 'string' && key !== '') : [];
   if (allow.length > 0) argv.push(`--allow=${allow.join(',')}`);
   if (input.listen === 'tcp') {
-    argv.push(String(input.port));
+    argv.push(`${input.port}:127.0.0.1:${input.port}`);
   } else {
     if (!input.socketPath) throw new Error('buildServeArgs: socketPath is required in socket mode');
     argv.push(`${input.port}:${input.socketPath}`);

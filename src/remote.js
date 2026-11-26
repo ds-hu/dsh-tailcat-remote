@@ -155,7 +155,7 @@ export class RemoteAccess {
       try {
         await this.installer.install({ force: options.force === true });
       } catch (error) {
-        if (wasDesired) {
+        if (wasDesired && !this.disposed) {
           try {
             await this.ensureDoor();
             await this.tailcat.start();
@@ -166,7 +166,7 @@ export class RemoteAccess {
         throw error;
       }
       this.tailcat.reloadBinary();
-      if (wasDesired) {
+      if (wasDesired && !this.disposed) {
         try {
           await this.ensureDoor();
           await this.tailcat.start();

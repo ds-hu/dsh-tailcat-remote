@@ -37,7 +37,9 @@ export function userConfigDir() {
 /** Common package-manager locations for a user-installed tailcat. */
 export function knownTailcatPaths(platform = process.platform) {
   if (platform === 'darwin') return ['/opt/homebrew/bin/tailcat', '/usr/local/bin/tailcat'];
-  if (platform === 'linux') return ['/usr/local/bin/tailcat', '/usr/bin/tailcat', '/bin/tailcat'];
+  if (platform === 'linux') {
+    return ['/usr/local/bin/tailcat', '/usr/bin/tailcat', '/bin/tailcat', '/snap/bin/tailcat', '/home/linuxbrew/.linuxbrew/bin/tailcat'];
+  }
   return [];
 }
 

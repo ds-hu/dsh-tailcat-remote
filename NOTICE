@@ -19,9 +19,9 @@ QR Code Generator
 
 tailcat
   tailcat is a separate program by Tailscale Inc & contributors, licensed
-  under the BSD 3-Clause License. It is not bundled with this package and is
-  not a dependency of the npm package; users install it themselves. This
-  plugin only starts the user's `tailcat` executable and parses its output.
+  under the BSD 3-Clause License. It is not bundled with this package. The
+  plugin can install a verified, user-local copy on request, or use a
+  pre-existing installation; it starts that executable and parses its output.
   Copyright (c) 2020 Tailscale Inc & contributors.
   Source: https://github.com/tailscale/tailcat
 

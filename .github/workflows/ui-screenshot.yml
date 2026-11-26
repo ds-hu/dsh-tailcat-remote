@@ -60,6 +60,36 @@ jobs:
           fi
           printf 'DSH_URL=%s\n' "$url" >> "$GITHUB_ENV"
 
+      - name: Boot a second Harness without tailcat
+        run: |
+          kill "$(cat "$RUNNER_TEMP/dsh.pid")" 2>/dev/null || true
+          for _ in $(seq 1 30); do
+            if ! kill -0 "$(cat "$RUNNER_TEMP/dsh.pid")" 2>/dev/null; then break; fi
+            sleep 1
+          done
+          PATH=$(printf '%s' "$PATH" | tr ':' '\n' | grep -v "^$RUNNER_TEMP/bin$" | paste -sd:)
+          export PATH
+          if command -v tailcat >/dev/null 2>&1; then
+            echo "tailcat unexpectedly still on PATH: $(command -v tailcat)"
+            exit 1
+          fi
+          for candidate in /usr/local/bin/tailcat /usr/bin/tailcat /bin/tailcat /snap/bin/tailcat; do
+            if [ -x "$candidate" ]; then echo "unexpected tailcat at $candidate"; exit 1; fi
+          done
+          nohup dsh --profile shots --no-open --host 127.0.0.1 --port 3100 > "$RUNNER_TEMP/dsh-install.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/dsh-install.pid"
+          url=""
+          for _ in $(seq 1 120); do
+            url=$(grep -oE 'http://127\.0\.0\.1:3100/\?token=[A-Za-z0-9._~-]+' "$RUNNER_TEMP/dsh-install.log" | head -1 || true)
+            if [ -n "$url" ]; then break; fi
+            sleep 1
+          done
+          if [ -z "$url" ]; then
+            tail -200 "$RUNNER_TEMP/dsh-install.log"
+            exit 1
+          fi
+          printf 'DSH_INSTALL_URL=%s\n' "$url" >> "$GITHUB_ENV"
+
       - name: Capture screenshots
         run: node scripts/ci/screenshot.mjs
 
@@ -72,4 +102,6 @@ jobs:
 
       - name: Harness log (failure diagnostics)
         if: always()
-        run: tail -200 "$RUNNER_TEMP/dsh.log" || true
+        run: |
+          tail -200 "$RUNNER_TEMP/dsh.log" || true
+          tail -200 "$RUNNER_TEMP/dsh-install.log" || true

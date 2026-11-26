@@ -22,34 +22,34 @@ page.on('console', (message) => {
 });
 page.on('pageerror', (error) => console.log('[pageerror]', error.message));
 
-async function dismissModals() {
+async function dismissModals(target = page) {
   // A fresh profile shows a preview notice and then asks for an API key.
   // Both modals block the sidebar; skip them by their explicit actions.
   for (let attempt = 0; attempt < 50; attempt += 1) {
-    const dismiss = page
+    const dismiss = target
       .locator('button:visible, [role="button"]:visible')
       .filter({ hasText: /^(继续|稍后配置|关闭)$/ })
       .first();
     if ((await dismiss.count()) > 0) {
       await dismiss.click({ force: true }).catch(() => {});
-      await page.waitForTimeout(500);
+      await target.waitForTimeout(500);
       continue;
     }
-    const skip = page.getByText('稍后配置', { exact: true }).first();
+    const skip = target.getByText('稍后配置', { exact: true }).first();
     if ((await skip.count()) > 0 && (await skip.isVisible().catch(() => false))) {
       await skip.click({ force: true }).catch(() => {});
-      await page.waitForTimeout(500);
+      await target.waitForTimeout(500);
       continue;
     }
-    const addKey = page.getByText('添加 API Key', { exact: true }).first();
+    const addKey = target.getByText('添加 API Key', { exact: true }).first();
     if ((await addKey.count()) > 0 && (await addKey.isVisible().catch(() => false))) {
       // The sign-in step has no skip button; opening the credential editor
       // exposes its cancel action, which is the supported way past it.
       await addKey.click({ force: true }).catch(() => {});
-      await page.waitForTimeout(500);
+      await target.waitForTimeout(500);
       continue;
     }
-    await page.waitForTimeout(400);
+    await target.waitForTimeout(400);
   }
 }
 
@@ -101,6 +101,27 @@ const security = page.locator('section.tcr-card').filter({ hasText: '安全' }).
 await security.scrollIntoViewIfNeeded();
 await page.waitForTimeout(500);
 await security.screenshot({ path: path.join(outDir, '02-security.png') });
+
+if (process.env.DSH_INSTALL_URL) {
+  const installContext = await browser.newContext({
+    viewport: { width: 1440, height: 1100 },
+    deviceScaleFactor: 2,
+    locale: 'zh-CN',
+    colorScheme: 'light',
+  });
+  const installPage = await installContext.newPage();
+  installPage.setDefaultTimeout(30_000);
+  await installPage.goto(process.env.DSH_INSTALL_URL, { waitUntil: 'domcontentloaded' });
+  await dismissModals(installPage);
+  await installPage.getByText('远程访问', { exact: true }).first().waitFor({ timeout: 60_000 });
+  await installPage.getByRole('button', { name: '远程访问', exact: true }).first().click();
+  await installPage.getByText('一键安装 tailcat', { exact: true }).first().waitFor({ timeout: 30_000 });
+  const installCard = installPage.locator('section.tcr-card').filter({ hasText: '一键安装 tailcat' }).first();
+  await installCard.scrollIntoViewIfNeeded();
+  await installPage.waitForTimeout(500);
+  await installCard.screenshot({ path: path.join(outDir, '03-install.png') });
+  await installContext.close();
+}
 
 await browser.close();
 console.log('screenshots written to', outDir);

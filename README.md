@@ -71,6 +71,10 @@ dsh plugin --profile web add @ds-hu/dsh-tailcat-remote
 - **已经自己安装过 tailcat**：插件启动时会检查 `PATH`，以及 `/opt/homebrew/bin`、`/usr/local/bin`、`/usr/bin` 等常见位置。检测到就直接使用，不会下载，也不会覆盖你的安装。诊断区会显示可执行文件来源和版本。
 - **其他平台或架构**：自动安装不可用时，按 [tailcat 安装说明](https://github.com/tailscale/tailcat#install) 手动安装（需要 0.8.0 或更新），再用 `binaryPath` 指向它。`binaryPath` 的优先级高于受管安装。
 
+<p align="center">
+  <img src="docs/screenshots/03-install.png" alt="缺少 tailcat 时的安装卡片：检测结果、安装方式、校验说明和一键安装按钮" width="820">
+</p>
+
 受管安装只在点击按钮时发生：插件不会在后台静默下载，也不把各平台二进制塞进 npm 包。
 
 > 自动安装只针对 **Host 端**的 tailcat 服务进程。要访问 Harness 的客户端设备仍然需要自己安装 tailcat，用来运行 `tailcat forward`；本插件不包含客户端程序。
