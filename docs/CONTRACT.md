@@ -15,7 +15,7 @@
 ```json
 {
   "ok": true,
-  "plugin": { "name": "@ds-hu/dsh-tailcat-remote", "version": "0.1.1" },
+  "plugin": { "name": "@ds-hu/dsh-tailcat-remote", "version": "0.1.2" },
   "now": "2026-11-24T16:22:50.998Z",
   "web": { "protocol": "http:", "port": 3080 },
   "config": {
@@ -120,7 +120,7 @@
 }
 ```
 
-`pairing` 在地址尚未产生时为 `null`。`tailcat.address` 与 `pairing.address` 相同；后者附带命令与二维码矩阵。`stderrTail` 已脱敏并截断，仅用于诊断。
+`pairing` 在地址尚未产生时为 `null`。`tailcat.address` 与 `pairing.address` 相同；后者附带命令与二维码矩阵。面板默认把地址、以及客户端命令中的地址显示为 `****`，点“显示地址”才展开；快照和复制仍携带完整值。`stderrTail` 已脱敏并截断，仅用于诊断。
 
 `tailcat.phase` 的取值：`stopped`、`starting`、`online`、`stopping`、`restarting`、`error`。
 

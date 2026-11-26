@@ -82,8 +82,40 @@ try {
     console.error('panel did not open; current page:', await page.locator('[aria-current="page"]').evaluateAll((nodes) => nodes.map((node) => node.getAttribute('aria-label'))));
     await page.getByText('配对这台 Harness', { exact: true }).waitFor({ timeout: 60_000 });
   }
+  const addressValue = page.locator('.tcr-address').first();
+  await addressValue.waitFor({ timeout: 10_000 });
+  if ((await addressValue.innerText()).trim() !== '****') {
+    throw new Error(`pairing address should start masked, got: ${await addressValue.innerText()}`);
+  }
+  const showAddress = page.getByRole('button', { name: '显示地址', exact: true }).first();
+  await showAddress.click();
+  await page.waitForTimeout(300);
+  const revealedAddress = (await addressValue.innerText()).trim();
+  if (revealedAddress === '****' || revealedAddress.length < 8) {
+    throw new Error(`pairing address did not reveal, got: ${revealedAddress}`);
+  }
+  const revealedCommand = (await page.locator('.tcr-command-text').first().innerText()).trim();
+  if (!revealedCommand.includes(revealedAddress)) {
+    throw new Error('revealed command does not contain the revealed address');
+  }
+  await page.getByRole('button', { name: '隐藏地址', exact: true }).first().click();
+  await page.waitForTimeout(300);
+  if ((await addressValue.innerText()).trim() !== '****') {
+    throw new Error('pairing address did not hide again');
+  }
+  const maskedCommand = (await page.locator('.tcr-command-text').first().innerText()).trim();
+  if (maskedCommand.includes(revealedAddress)) {
+    throw new Error('command leaks the address while hidden');
+  }
+
+  await page.waitForTimeout(2_000);
+  await page.screenshot({ path: path.join(outDir, '01-pairing.png') });
+
   const qrToggle = page.getByRole('button', { name: '显示二维码', exact: true }).first();
   if ((await qrToggle.count()) > 0) {
+    if (!(await qrToggle.evaluate((node) => node.classList.contains('tcr-btn-primary')))) {
+      throw new Error('QR toggle should be prominent while the QR code is hidden');
+    }
     await qrToggle.click();
     await page.locator('.tcr-qr-wrap').first().waitFor({ timeout: 10_000 });
     await page.waitForTimeout(500);
@@ -93,9 +125,6 @@ try {
   console.error(await page.locator('body').innerText());
   throw error;
 }
-await page.waitForTimeout(2_000);
-
-await page.screenshot({ path: path.join(outDir, '01-pairing.png') });
 
 const security = page.locator('section.tcr-card').filter({ hasText: '安全' }).first();
 await security.scrollIntoViewIfNeeded();

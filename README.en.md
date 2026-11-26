@@ -24,13 +24,13 @@ DeepSeek Harness listens on the local machine by default. Opening the same GUI f
 Remote Access folds that into one plugin. The Host supervises a `tailcat` process and a tailnet-only local door. The client needs a tailcat address and one command.
 
 <p align="center">
-  <img src="docs/screenshots/01-pairing.png" alt="Remote Access page: a running tunnel, the tailcat address, QR code, client command, and three usage steps" width="820">
+  <img src="docs/screenshots/01-pairing.png" alt="Remote Access page: a running tunnel, a masked tailcat address, a prominent Show QR code button, and three usage steps" width="820">
 </p>
 
 ## What you get
 
 - **One address across networks.** No public port. tailcat uses a DERP relay or a direct path, and the browser finally talks to the client's own `127.0.0.1`.
-- **Scan or copy to pair.** The page shows the address, a QR code, and the exact `tailcat forward …` command, with the three steps beside them.
+- **Scan or copy to pair.** The address, including the one inside the command, is masked as `****` until you choose **Show address**; Copy always copies the full value, and the QR code is opt-in.
 - **A key allow-list.** The address is the only credential by default. Add client public keys and unauthorized devices are refused during the tailcat handshake.
 - **Rotate the address, manage the process.** Start, stop, restart, and rotate from the sidebar; inspect the relay region, recent connections, refusals, and errors.
 - **Log in once.** The first remote visit runs the normal DSH login flow and then keeps an HttpOnly cookie. The token never appears in the remote URL.
@@ -82,7 +82,7 @@ The managed install only runs after you click the button: there is no background
 ## Use
 
 1. Restart Harness and open **Remote Access** in the sidebar.
-2. If the page reports a missing tailcat, click **Install tailcat** first; otherwise wait for **Online** and the address. The first start creates a saved key and probes a DERP region, which can take a minute.
+2. If the page reports a missing tailcat, click **Install tailcat** first; otherwise wait for **Online** and the address (masked by default; choose **Show address** to reveal it). The first start creates a saved key and probes a DERP region, which can take a minute.
 3. On the client device, install tailcat and run the command shown on the page, or scan the QR code for the address:
 
    ```sh

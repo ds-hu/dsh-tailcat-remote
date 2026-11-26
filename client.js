@@ -37,12 +37,14 @@ window.__ModuleLoader__.load({
       copy: '复制',
       copied: '已复制',
       copyFailed: '复制失败，请手动选择文本。',
+      addressHiddenHint: '地址与命令中的地址默认遮罩为 ****；点“显示地址”查看，复制按钮始终复制完整值。',
+      showAddress: '显示地址',
+      hideAddress: '隐藏地址',
       showQr: '显示二维码',
       hideQr: '隐藏二维码',
       pairingTitle: '配对这台 Harness',
       pairingHint: '在承载隧道的设备上运行下面的命令，然后用该设备的浏览器打开本地地址。',
       addressLabel: 'tailcat 地址',
-      commandLabel: '客户端设备命令',
       commandHint: '客户端绑定 {localPort} 端口，Harness 位于虚拟端口 {port}。',
       openLocal: '打开本地地址',
       localUrlHint: '隧道建立后，这个地址会走一次正常的 DSH 登录流程，之后沿用浏览器会话 Cookie。',
@@ -171,12 +173,14 @@ window.__ModuleLoader__.load({
       copy: 'Copy',
       copied: 'Copied',
       copyFailed: 'Could not copy; select the text manually.',
+      addressHiddenHint: 'The address and the address inside the command are masked as **** by default. Choose Show address to reveal them; Copy always copies the full value.',
+      showAddress: 'Show address',
+      hideAddress: 'Hide address',
       showQr: 'Show QR code',
       hideQr: 'Hide QR code',
       pairingTitle: 'Pair this Harness',
       pairingHint: 'Run the command on the device that will carry the tunnel, then open the local URL in that device’s browser.',
       addressLabel: 'tailcat address',
-      commandLabel: 'Command for the client device',
       commandHint: 'The client binds port {localPort}; the Harness lives on virtual port {port}.',
       openLocal: 'Open local URL',
       localUrlHint: 'Once the tunnel is up, this URL offers the normal DSH login flow once, then keeps the session cookie.',
@@ -308,6 +312,7 @@ window.__ModuleLoader__.load({
       .tcr-btn:disabled { opacity: .45; cursor: not-allowed; }
       .tcr-btn-primary { background: var(--dsw-alias-button-primary-fill); border-color: transparent; color: var(--dsw-alias-label-primary-foreground); }
       .tcr-btn-primary:hover:not(:disabled) { background: var(--dsw-alias-button-primary-hover); }
+      .tcr-qr-toggle { height: 34px; padding: 0 15px; font-weight: 600; }
       .tcr-btn-danger { color: var(--dsw-alias-state-error-primary); border-color: var(--dsw-alias-border-l3); background: transparent; }
       .tcr-btn-danger:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover-danger); }
       .tcr-btn-ghost { background: transparent; border-color: transparent; color: var(--dsw-alias-label-secondary); }
@@ -440,10 +445,10 @@ window.__ModuleLoader__.load({
     /**
      * @param {object} props - button props.
      */
-    function Button({ variant = 'secondary', disabled = false, onClick, children, title }) {
+    function Button({ variant = 'secondary', disabled = false, onClick, children, title, className }) {
       return h(
         'button',
-        { type: 'button', className: `tcr-btn tcr-btn-${variant}`, disabled, onClick, title },
+        { type: 'button', className: `tcr-btn tcr-btn-${variant}${className ? ` ${className}` : ''}`, disabled, onClick, title },
         children,
       );
     }
@@ -592,6 +597,7 @@ window.__ModuleLoader__.load({
     function RemotePage({ t }) {
       const { snapshot, error, busy, notice, setNotice, act, reload } = useRemoteState();
       const [showQr, setShowQr] = useState(false);
+      const [showAddress, setShowAddress] = useState(false);
       const [rotateArmed, setRotateArmed] = useState(false);
       const [draft, setDraft] = useState('');
       const [devicesDirty, setDevicesDirty] = useState(false);
@@ -718,6 +724,7 @@ window.__ModuleLoader__.load({
               : t('sourceUnavailable');
       const install = snapshot.plugin?.name ?? '@ds-hu/dsh-tailcat-remote';
       const command = pairing?.command ?? '';
+      const displayCommand = showAddress ? command : maskCommand(command, pairing?.address);
       const localUrl = pairing ? `http://127.0.0.1:${pairing.localPort}/` : '';
       const saveBusy = busy === 'devices';
 
@@ -914,12 +921,23 @@ window.__ModuleLoader__.load({
                 h(
                   'div',
                   { className: 'tcr-code' },
-                  h('span', { className: 'tcr-code-text tcr-address' }, pairing.address),
-                  h('div', { style: { display: 'flex', gap: 6 } },
+                  h('span', { className: 'tcr-code-text tcr-address' }, showAddress ? pairing.address : '****'),
+                  h('div', { style: { display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' } },
                     h(CopyButton, { text: pairing.address, t, onResult: reportCopy }),
-                    h(Button, { variant: 'ghost', onClick: () => setShowQr((value) => !value), 'aria-pressed': showQr }, showQr ? t('hideQr') : t('showQr')),
+                    h(Button, { variant: 'ghost', onClick: () => setShowAddress((value) => !value), 'aria-pressed': showAddress }, showAddress ? t('hideAddress') : t('showAddress')),
+                    h(
+                      Button,
+                      {
+                        variant: showQr ? 'ghost' : 'primary',
+                        className: 'tcr-qr-toggle',
+                        onClick: () => setShowQr((value) => !value),
+                        'aria-pressed': showQr,
+                      },
+                      showQr ? t('hideQr') : t('showQr'),
+                    ),
                   ),
                 ),
+                !showAddress ? h('p', { className: 'tcr-hint' }, t('addressHiddenHint')) : null,
                 showQr
                   ? h('div', { className: 'tcr-qr-wrap' },
                       pairing.qr
@@ -928,11 +946,10 @@ window.__ModuleLoader__.load({
                       h('div', { className: 'tcr-hint', style: { marginTop: 0 } }, t('stepRun')),
                     )
                   : null,
-                h('label', { className: 'tcr-label', style: { marginTop: 16 } }, t('commandLabel')),
                 h(
                   'div',
-                  { className: 'tcr-code' },
-                  h('span', { className: 'tcr-code-text' }, command),
+                  { className: 'tcr-code', style: { marginTop: 16 } },
+                  h('span', { className: 'tcr-code-text tcr-command-text' }, displayCommand),
                   h(CopyButton, { text: command, t, onResult: reportCopy }),
                 ),
                 h('p', { className: 'tcr-hint' }, t('commandHint', { localPort: pairing.localPort, port: pairing.port })),
@@ -1150,6 +1167,19 @@ window.__ModuleLoader__.load({
       if (bytes < 1_024) return `${bytes} B`;
       if (bytes < 1_048_576) return `${(bytes / 1_024).toFixed(1)} KB`;
       return `${(bytes / 1_048_576).toFixed(1)} MB`;
+    }
+
+    /**
+     * Hide the credential inside a pairing command for display. Copy actions
+     * keep using the original value; this function is display-only.
+     * @param {string} command - full command emitted by the Host.
+     * @param {string} address - full tailcat address.
+     * @returns {string} command with the address replaced by ****.
+     */
+    function maskCommand(command, address) {
+      if (!command) return '';
+      if (!address) return '****';
+      return command.includes(address) ? command.split(address).join('****') : '****';
     }
 
     /**
