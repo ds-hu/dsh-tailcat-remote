@@ -153,6 +153,16 @@ sequenceDiagram
 - “更换地址”是两步确认，并明确提示：旧地址立即失效，但已签发的 DSH 浏览器 cookie 不会因此撤销；
 - 安装卡片显示系统检测结果、平台安装方式、下载进度、错误和手动安装链接。
 
+## 老 WebView 兼容
+
+DSH 的 Web 客户端按现代 JS 引擎构建，直接调用 `AbortSignal.any`、`Promise.withResolvers`、`URL.canParse`、`Array.prototype.toSorted` 而不兜底（PDF 预览的 pdf.js 块还要 `Promise.try` 和 `URL.parse`）。HarmonyOS 与旧 Android WebView 没有这些 API，页面只会半坏：连接一直停在 “Reconnecting”，设置里的 Models 是空白，带链接或图片的消息会让 shell 的渲染器抛错，而只用一次性请求的 tab 和面板看起来正常。
+
+远程访问本身就是这个页面到达手机的那条路，所以 `client.js` 在注册工厂之前先把这六个 API 补上：
+
+- 只在缺失时定义，已有的原生实现原样保留；ES5 语法、单个补丁失败只记录不抛。清单不是版本表：每一条都在已发布的客户端 bundle 里有调用点，DSH 用到新 API 时同时加清单并递增 `REVISION`。
+- `dsh.client.immediately` 把它放进 stage-one prefetch，脚本在其它插件 apply 之前执行。即使执行晚了也不致命：连接会退避重试，下一个 generation 就会连上。
+- 结果写在 `window.__cuplivoHarnessCompat`：`revision`（页面已执行过旧副本时，新 revision 会重新跑一遍安装）、`installed` / `present` / `failed` / `missing` / `userAgent`。`missing` 只回答“这份清单还缺谁”，不代表 DSH 用到的 API 一定齐了。
+
 ## 失败模式
 
 | 现象 | 原因 | 插件行为 |
@@ -168,10 +178,11 @@ sequenceDiagram
 | 地址一直不出现 | DERP 不可达、代理阻断 | 状态停在 `starting`；保留 stderr 尾部供诊断 |
 | `[peer] refused … not-in-allow` | 客户端不在白名单 | 面板计数并显示拒绝记录 |
 | 地址更换后页面断开 | 页面本身正走旧隧道 | 属预期；在本机页面操作，或重新配对 |
+| 页面半坏（Reconnecting、Models 空白、带链接的消息抛错） | WebView 引擎缺少 DSH 客户端需要的 API | 启动时由客户端补丁补齐；仍异常时读 `window.__cuplivoHarnessCompat`，`missing` 只说明清单内的缺口 |
 
 ## 测试
 
-`node --test` 覆盖纯逻辑：地址/日志解析、argv 构造、QR 矩阵、白名单持久化、配置默认值与 manifest，以及安装器的平台矩阵、校验清单解析、系统 tailcat 检测和版本下限。
+`node --test` 覆盖纯逻辑：地址/日志解析、argv 构造、QR 矩阵、白名单持久化、配置默认值与 manifest，以及安装器的平台矩阵、校验清单解析、系统 tailcat 检测和版本下限。客户端 bundle 也在删掉原生 API 的上下文里加载过一遍：断言补丁先于工厂注册就位、已有实现不被覆盖，并覆盖 `AbortSignal.any` 的语义。
 
 网络行为（真实下载、解压、运行 tailcat、serve 目标）由 `.github/workflows/installer-smoke.yml` 在 Linux、Windows、macOS runner 上执行；它使用真实 GitHub release，并在测试后清理临时目录。普通 CI 在三种 OS 上做 `npm ci`、语法检查、单元测试和 `npm pack --dry-run`，避免每次提交都依赖外部网络；cookie 认领、WebSocket 等完整浏览器路径不在 CI 的 smoke 范围内。
 
