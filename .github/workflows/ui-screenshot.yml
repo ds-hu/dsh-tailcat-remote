@@ -34,7 +34,7 @@ jobs:
         env:
           DSH_PROFILE: web
         run: |
-          dsh --profile web --from-default-profile web --dump-config > /dev/null
+          dsh --profile web --dump-config > /dev/null
           dsh plugin --profile web add "$GITHUB_WORKSPACE"
           node scripts/ci/prepare-profile.mjs
           node -e "const p=require(process.env.HOME+'/.dsh/profiles/web/package.json'); console.log(p.dsh.profile.bundles)"
