@@ -32,10 +32,12 @@ jobs:
           node-version: 22
       - name: Homebrew diagnostics (macOS)
         if: runner.os == 'macOS'
+        continue-on-error: true
         shell: bash
         run: |
           brew --version
           brew config | grep -iE 'auto.?update|HOMEBREW_' || true
+          brew update > /dev/null 2>&1 || true
           brew info --json=v2 tailcat | jq -r '.formulae[0].versions.stable'
 
       - name: Install, verify, and run tailcat
