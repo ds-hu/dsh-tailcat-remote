@@ -6,6 +6,7 @@ import { Door } from './door.js';
 import { buildForwardCommand } from './parse.js';
 import { qrMatrix } from './qr.js';
 import { TailcatInstaller } from './installer.js';
+import { surfaceOf } from './surface.js';
 import { TailcatSupervisor } from './tailcat.js';
 
 const LOCAL_CLIENT_PORT = 18_080;
@@ -25,6 +26,7 @@ export class RemoteAccess {
     this.ctx = ctx;
     this.config = config;
     this.logger = ctx.logger;
+    this.surface = surfaceOf(ctx);
     this.devices = createDeviceStore({ logger: ctx.logger });
     this.installer = new TailcatInstaller(ctx, {
       logger: ctx.logger,
@@ -213,6 +215,7 @@ export class RemoteAccess {
     const pairing = this.pairing(tailcat.address);
     return {
       plugin: { name: plugin.name, version: plugin.version },
+      surface: this.surface,
       now: new Date().toISOString(),
       web: {
         protocol: this.ctx.webServer.protocol,
