@@ -26,5 +26,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Homebrew diagnostics (macOS)
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          brew --version
+          brew config | grep -iE 'auto.?update|HOMEBREW_' || true
+          brew info --json=v2 tailcat | jq -r '.formulae[0].versions.stable'
+
       - name: Install, verify, and run tailcat
         run: node scripts/ci/installer-smoke.mjs
