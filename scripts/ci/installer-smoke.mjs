@@ -111,7 +111,7 @@ try {
     { logger },
     {
       logger,
-      releaseTag: 'v0.1.2',
+      releaseTag: 'v0.1.3',
       requestedBinary: 'tailcat',
       resolveExecutable,
       runCommand,

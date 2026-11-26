@@ -94,18 +94,16 @@ try {
   if (revealedAddress === '****' || revealedAddress.length < 8) {
     throw new Error(`pairing address did not reveal, got: ${revealedAddress}`);
   }
-  const revealedCommand = (await page.locator('.tcr-command-text').first().innerText()).trim();
-  if (!revealedCommand.includes(revealedAddress)) {
-    throw new Error('revealed command does not contain the revealed address');
-  }
   await page.getByRole('button', { name: '隐藏地址', exact: true }).first().click();
   await page.waitForTimeout(300);
   if ((await addressValue.innerText()).trim() !== '****') {
     throw new Error('pairing address did not hide again');
   }
-  const maskedCommand = (await page.locator('.tcr-command-text').first().innerText()).trim();
-  if (maskedCommand.includes(revealedAddress)) {
-    throw new Error('command leaks the address while hidden');
+  if ((await page.locator('.tcr-command-text').count()) > 0) {
+    throw new Error('the client command block should be removed');
+  }
+  if ((await page.locator('.tcr-steps').count()) > 0) {
+    throw new Error('the client command steps should be removed');
   }
 
   await page.waitForTimeout(2_000);

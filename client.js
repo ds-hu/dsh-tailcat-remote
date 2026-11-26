@@ -37,21 +37,17 @@ window.__ModuleLoader__.load({
       copy: '复制',
       copied: '已复制',
       copyFailed: '复制失败，请手动选择文本。',
-      addressHiddenHint: '地址与命令中的地址默认遮罩为 ****；点“显示地址”查看，复制按钮始终复制完整值。',
+      addressHiddenHint: '地址默认遮罩为 ****；点“显示地址”查看，复制按钮始终复制完整值。',
       showAddress: '显示地址',
       hideAddress: '隐藏地址',
       showQr: '显示二维码',
       hideQr: '隐藏二维码',
       pairingTitle: '配对这台 Harness',
-      pairingHint: '在承载隧道的设备上运行下面的命令，然后用该设备的浏览器打开本地地址。',
+      pairingHint: '把地址带到客户端设备，在那里运行 tailcat forward，然后用该设备的浏览器打开本地地址。',
       addressLabel: 'tailcat 地址',
-      commandHint: '客户端绑定 {localPort} 端口，Harness 位于虚拟端口 {port}。',
       openLocal: '打开本地地址',
       localUrlHint: '隧道建立后，这个地址会走一次正常的 DSH 登录流程，之后沿用浏览器会话 Cookie。',
-      stepsTitle: '使用步骤',
-      stepInstall: '在客户端设备安装 tailcat。',
-      stepRun: '运行下面的命令，或扫描二维码把地址带到那台设备。',
-      stepOpen: '在客户端浏览器打开 http://127.0.0.1:{localPort}/。',
+      qrHint: '扫描二维码把地址带到客户端设备。',
       installHint: '插件可以自动安装 tailcat；如果自动安装不可用，也可以从 GitHub Release 手动安装并设置 binaryPath。',
       securityTitle: '安全',
       allowOffTitle: '地址就是唯一的钥匙',
@@ -173,21 +169,17 @@ window.__ModuleLoader__.load({
       copy: 'Copy',
       copied: 'Copied',
       copyFailed: 'Could not copy; select the text manually.',
-      addressHiddenHint: 'The address and the address inside the command are masked as **** by default. Choose Show address to reveal them; Copy always copies the full value.',
+      addressHiddenHint: 'The address is masked as **** by default. Choose Show address to reveal it; Copy always copies the full value.',
       showAddress: 'Show address',
       hideAddress: 'Hide address',
       showQr: 'Show QR code',
       hideQr: 'Hide QR code',
       pairingTitle: 'Pair this Harness',
-      pairingHint: 'Run the command on the device that will carry the tunnel, then open the local URL in that device’s browser.',
+      pairingHint: 'Move the address to the client device, run tailcat forward there, then open the local URL in that device’s browser.',
       addressLabel: 'tailcat address',
-      commandHint: 'The client binds port {localPort}; the Harness lives on virtual port {port}.',
       openLocal: 'Open local URL',
       localUrlHint: 'Once the tunnel is up, this URL offers the normal DSH login flow once, then keeps the session cookie.',
-      stepsTitle: 'Three steps',
-      stepInstall: 'Install tailcat on the client device.',
-      stepRun: 'Run the command, or scan the QR code to move the address to that device.',
-      stepOpen: 'Open http://127.0.0.1:{localPort}/ in the client browser.',
+      qrHint: 'Scan the QR code to move the address to the client device.',
       installHint: 'The plugin can install tailcat automatically. If that is unavailable, install it from the GitHub release and set binaryPath.',
       securityTitle: 'Security',
       allowOffTitle: 'The address is the only key',
@@ -345,8 +337,6 @@ window.__ModuleLoader__.load({
       .tcr-qr-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 14px; }
       .tcr-qr { width: min(240px, 62vw); padding: 12px; background: #fff; border-radius: 12px; border: 1px solid var(--dsw-alias-border-l3); box-sizing: content-box; }
       .tcr-qr svg { display: block; width: 100%; height: auto; }
-      .tcr-steps { margin: 12px 0 0; padding-left: 20px; color: var(--dsw-alias-label-secondary); font-size: 13px; line-height: 1.7; }
-      .tcr-steps code { color: var(--dsw-alias-label-primary); }
       .tcr-badge { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 6px; background: var(--dsw-alias-bg-layer-3); color: var(--dsw-alias-label-secondary); font-size: 11.5px; white-space: nowrap; }
       .tcr-recent { display: flex; flex-direction: column; gap: 0; margin-top: 4px; }
       .tcr-recent-row { display: grid; grid-template-columns: 1.5fr .5fr .9fr .6fr .7fr; gap: 10px; align-items: baseline; padding: 8px 0; border-bottom: 1px dashed var(--dsw-alias-border-l3); font-size: 12.5px; }
@@ -723,8 +713,6 @@ window.__ModuleLoader__.load({
               ? t('sourcePath')
               : t('sourceUnavailable');
       const install = snapshot.plugin?.name ?? '@ds-hu/dsh-tailcat-remote';
-      const command = pairing?.command ?? '';
-      const displayCommand = showAddress ? command : maskCommand(command, pairing?.address);
       const localUrl = pairing ? `http://127.0.0.1:${pairing.localPort}/` : '';
       const saveBusy = busy === 'devices';
 
@@ -943,21 +931,9 @@ window.__ModuleLoader__.load({
                       pairing.qr
                         ? h(QrCode, { matrix: pairing.qr, t })
                         : h('p', { className: 'tcr-hint', style: { marginTop: 0 } }, t('qrUnavailable')),
-                      h('div', { className: 'tcr-hint', style: { marginTop: 0 } }, t('stepRun')),
+                      h('div', { className: 'tcr-hint', style: { marginTop: 0 } }, t('qrHint')),
                     )
                   : null,
-                h(
-                  'div',
-                  { className: 'tcr-code', style: { marginTop: 16 } },
-                  h('span', { className: 'tcr-code-text tcr-command-text' }, displayCommand),
-                  h(CopyButton, { text: command, t, onResult: reportCopy }),
-                ),
-                h('p', { className: 'tcr-hint' }, t('commandHint', { localPort: pairing.localPort, port: pairing.port })),
-                h('ol', { className: 'tcr-steps' },
-                  h('li', null, t('stepInstall')),
-                  h('li', null, t('stepRun')),
-                  h('li', null, t('stepOpen', { localPort: pairing.localPort })),
-                ),
                 h('label', { className: 'tcr-label', style: { marginTop: 16 } }, t('openLocal')),
                 h(
                   'div',
@@ -1167,19 +1143,6 @@ window.__ModuleLoader__.load({
       if (bytes < 1_024) return `${bytes} B`;
       if (bytes < 1_048_576) return `${(bytes / 1_024).toFixed(1)} KB`;
       return `${(bytes / 1_048_576).toFixed(1)} MB`;
-    }
-
-    /**
-     * Hide the credential inside a pairing command for display. Copy actions
-     * keep using the original value; this function is display-only.
-     * @param {string} command - full command emitted by the Host.
-     * @param {string} address - full tailcat address.
-     * @returns {string} command with the address replaced by ****.
-     */
-    function maskCommand(command, address) {
-      if (!command) return '';
-      if (!address) return '****';
-      return command.includes(address) ? command.split(address).join('****') : '****';
     }
 
     /**
