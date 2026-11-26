@@ -12,7 +12,7 @@ tailcat DERP / 直连（加密）
    │
    ▼
 tailcat serve（本机进程）
-   │  13080 → Unix socket 0600
+   │  13080 → Unix socket 0600（Windows 默认回环 TCP）
    ▼
 Door ──► DSH Connection（cookie、Host、Origin、owner）
    │
@@ -21,7 +21,7 @@ DSH Web / API / WebSocket
 ```
 
 - **Door 不是公网监听。** 默认只创建 `$DSH_HOME/tailcat-remote.sock`（0600），本机其他用户不能连接；同用户的本地进程可以连接，这是本机进程信任模型的自然结果。
-- **tailcat 是唯一的入口。** 插件不打开 TCP 端口。只有 `tailcat serve` 能把虚拟端口 13080 映射到 door。
+- **tailcat 是唯一的隧道入口。** Linux/macOS 上插件不打开 TCP 端口；Windows 上 tailcat 不支持 Unix socket 目标，door 绑定 `127.0.0.1` 的 TCP 端口，仍不对局域网开放。只有 `tailcat serve` 能把虚拟端口 13080 映射到 door。
 - **鉴权仍由 DSH 负责。** Door 不做自己的账号体系，也不把 remote 标成 owner；它让 DSH 对远程请求执行同一套 `requestRejection` / cookie 判断。
 - **地址是一份凭据。** tailcat 地址本身足以建立隧道；没有设备白名单时，拿到地址就能到达 DSH 登录入口，再由 DSH 的 cookie 机制决定会话。地址应当按密码对待。
 
@@ -64,7 +64,7 @@ tailcat genkey --client --key=client-default
 - **只在用户点击时联网。** 插件没有 postinstall 脚本，不会在后台下载；安装动作必须在面板点击，或在已认证的 owner API 上显式调用 `install`。
 - **Linux / Windows：** 从 `https://github.com/tailscale/tailcat/releases/tag/v0.8.0` 下载与当前 `process.platform`/`process.arch` 对应的官方资产，并从同一个 release 读取 `checksums.txt`。下载完成后先校验 SHA-256，校验不通过就删除临时文件并保留旧版本。HTTPS 保护传输，校验值保护下载完整性；如果上游 release 本身被攻破，校验值也会一起被改，插件无法提供超过上游的保证。
 - **macOS：** 先执行 `brew update`，再通过 Homebrew 安装/升级 `tailcat` formula；信任 Homebrew 的 formula、bottle 或源码构建链。没有 Homebrew 时不会尝试其他来源，而是提示手动安装。
-- **用户已有的 tailcat：** 启动时只读取和探测 `PATH`、Homebrew 前缀等常见位置，不移动、不覆盖、不升级。检测到系统版本时，面板不再显示下载按钮。
+- **用户已有的 tailcat：** 启动时只读取和探测 `PATH`、Homebrew 前缀等常见位置，不移动、不覆盖、不升级。检测到 0.8.0 或更新的系统版本时，面板不再显示下载按钮；更旧的版本会被标为不兼容，由用户选择升级或安装受管副本。
 - **写入位置：** 受管可执行文件固定在 `$DSH_HOME/tailcat-remote/bin/tailcat`（Windows 为 `tailcat.exe`），模式 0755；临时下载目录权限 0700；元数据 `tailcat.json` 权限 0600；替换采用同目录备份 + 原子 rename。系统 `PATH` 不会被修改，也不会向系统目录写入任何文件。
 - **执行权限：** 受管 tailcat 与 Host 使用同一个 OS 用户运行，因此拥有该用户的权限。不要把 `binaryPath` 指向可被其他用户写入的路径。
 
@@ -74,14 +74,14 @@ tailcat genkey --client --key=client-default
 
 - **Door 只支持明文 HTTP 的 Web listener。** 如果 DSH 配置了 TLS，插件拒绝启动 door（`door-tls-unsupported`）。原因是没有可重放的 `Set-Cookie` 语义：远程客户端看到的是 `http://127.0.0.1:18080`，把 `Secure` cookie 直接搬过去会失效。要在 TLS 场景使用，应让 tailcat 映射到一个明确终止 TLS 的反向代理，并单独评估 cookie 属性；当前版本不提供这个模式。
 - **`listen: tcp` 会扩大本机可达面。** 绑定 `127.0.0.1` 后，本机任何进程都能访问 door；Unix socket 0600 是 Linux/macOS 的默认值。Windows 因 tailcat 不支持 Unix socket 目标而默认 tcp；不要把该端口转发到局域网。
-- **tailcat 自身的信任假设。** 插件信任 tailcat 二进制、它的 DERP map、本机代理配置和本机用户环境。请从可信来源安装 tailcat，并保持更新。
+- **tailcat 自身的信任假设。** 插件信任 tailcat 二进制、它的 DERP map、本机代理配置和本机用户环境。请从可信来源安装 tailcat，并保持更新；Unix-socket door 和 `--log` 需要 tailcat 0.8.0 或更新。
 - **访问日志是诊断数据。** `--log` 会记录 peer 公钥前缀/后缀、端口、路径和时长；插件对地址和完整 nodekey 做脱敏，但日志仍可能透露连接时间与设备数量。关闭 `logAccess` 可减少记录。
 - **二维码等同地址。** 二维码只编码 tailcat 地址；截图、投屏或转发二维码与转发地址等价。
 - **本插件没有经过独立安全审计。** 它复用 DSH 的认证路径，但没有形式化验证。
 
 ## 推荐配置
 
-1. 保持默认的 Unix socket door，不要直接暴露 3080。
+1. Linux/macOS 保持默认的 Unix socket door；Windows 使用默认的 `127.0.0.1` TCP door。不要直接暴露 3080，也不要把 door 端口转发到局域网。
 2. 在分享地址前添加至少一个设备公钥；面板的红色警告消失后再继续。
 3. 用 `stable` 地址模式；需要轮换时用面板按钮，不要手改密钥文件。
 4. 不要把地址、二维码或带 `nodekey:` 的日志贴到公开 issue；需要贴日志时先脱敏。

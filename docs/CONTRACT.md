@@ -179,7 +179,7 @@
 | 503 | `door-listen-failed` / `door-socket-missing` | door 未监听或 socket 丢失 |
 | 503 | `disposed` | 插件正在卸载 |
 
-`tailcat-not-found` 的 message 会包含 `binaryPath` 与底层解析错误；面板用 `tailcat.binary.resolved === null && tailcat.phase === "error"` 识别安装提示。面板只在 `installer.system.status !== "found"` 且 `installer.supported` 为真时显示安装按钮；检测到系统 tailcat 时不会再诱导用户下载。
+`tailcat-not-found` 的 message 会包含 `binaryPath` 与底层解析错误；面板用 `tailcat.binary.resolved === null && tailcat.phase === "error"` 识别安装提示。面板只在 `installer.supported` 为真、没有显式 `binaryPath` 覆盖、且（没有检测到系统 tailcat 或检测到的版本低于 0.8.0）时显示安装按钮；检测到可用的系统 tailcat 时不会再诱导用户下载。
 
 ## 兼容性
 

@@ -6,6 +6,10 @@ on:
     paths:
       - 'src/installer.js'
       - 'src/paths.js'
+      - 'src/config.js'
+      - 'src/parse.js'
+      - 'src/tailcat.js'
+      - 'src/remote.js'
       - 'scripts/ci/installer-smoke.mjs'
       - '.github/workflows/installer-smoke.yml'
 
@@ -20,7 +24,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest, macos-15-intel]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

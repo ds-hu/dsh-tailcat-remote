@@ -686,7 +686,7 @@ export class TailcatInstaller {
   /** @private */
   readInstalled() {
     try {
-      if (!isFile(this.binaryPath)) return null;
+      if (!isRegularFile(this.binaryPath)) return null;
       if (this.platform !== 'win32' && !isExecutable(this.binaryPath)) return null;
       try {
         const metadata = JSON.parse(fs.readFileSync(this.metadataPath, 'utf8'));
@@ -762,14 +762,23 @@ function baseEnv() {
  */
 async function findBinary(root, name) {
   const direct = path.join(root, name);
-  if (isFile(direct)) return direct;
+  if (isRegularFile(direct)) return direct;
   const entries = await fsp.readdir(root, { withFileTypes: true }).catch(() => []);
   for (const entry of entries) {
-    if (!entry.isDirectory()) continue;
+    if (!entry.isDirectory() || entry.isSymbolicLink()) continue;
     const candidate = path.join(root, entry.name, name);
-    if (isFile(candidate)) return candidate;
+    if (isRegularFile(candidate)) return candidate;
   }
   return null;
+}
+
+/** @param {string} file - path. @returns {boolean} regular file that is not a symlink. */
+function isRegularFile(file) {
+  try {
+    return fs.lstatSync(file).isFile();
+  } catch {
+    return false;
+  }
 }
 
 /** @param {string} file - path. @returns {boolean} regular file. */

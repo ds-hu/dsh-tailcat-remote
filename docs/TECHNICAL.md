@@ -27,7 +27,7 @@ Host 插件
 - **TailcatInstaller** 负责“用户到底装没装 tailcat”。它只做检测和显式安装：检测不会写文件；安装只在面板点击后发生。Linux/Windows 下载官方 release 资产并校验 SHA-256；macOS 先更新 Homebrew 再安装/升级 formula；系统里已有的 tailcat 永远优先被识别，不会被下载覆盖。Unix-socket door 依赖 tailcat 0.8.0 的 serve 目标语法，因此低于该版本会被标为不兼容并提示升级。
 - **RemoteAccess** 是门面。它串行化所有变更操作，向面板提供一份快照，避免“页面连续点两次启动”这类竞态。
 
-没有把 13080 直接开在 TCP 上。TCP `127.0.0.1` 仍对同机所有进程可见，Unix socket 的 0600 权限更小；tailcat 能在同机直接连 socket，不需要 TCP。配置保留 `listen: tcp` 只是为了诊断或在不支持 Unix socket 的环境里逃生。
+Linux/macOS 默认不把 13080 开在 TCP 上。TCP `127.0.0.1` 仍对同机所有进程可见，Unix socket 的 0600 权限更小；tailcat 能在同机直接连 socket，不需要 TCP。Windows 上 tailcat 没有 Unix-socket 目标支持，因此默认改用回环 TCP；两端都只绑定 `127.0.0.1`。
 
 ## 一次远程请求的路径
 
@@ -64,10 +64,10 @@ sequenceDiagram
 ## 生命周期
 
 1. Host 插件激活，`RemoteAccess.start()` 先启动 door，再按 `autoStart` 启动 tailcat。
-2. Door 监听 Unix socket。若 socket 文件已存在且可连接，说明另一个实例还在用，door 报错；若是上次崩溃留下的死文件，door 在确认不可连接后删除并重建。
+2. Door 在 Linux/macOS 监听 Unix socket，在 Windows 监听 `127.0.0.1:<port>`。Unix socket 路径已存在且可连接时，说明另一个实例还在用，door 报错；若是上次崩溃留下的死文件，door 在确认不可连接后删除并重建。
 3. 可执行文件解析：显式 `binaryPath` 优先；默认值时先看受管目录 `$DSH_HOME/tailcat-remote/bin/tailcat`，再看 `subprocess.resolveExecutable` 解析的 PATH 和常见包管理器位置。失败会进入 `error` 状态，并在面板显示安装提示。
 4. 保存密钥：`stable` 模式检查 `<user config>/tailcat/keys/<keyName>.private.json`，不存在就运行一次 `tailcat genkey --fixed-region`。`ephemeral` 模式传 `--key=new`，每次启动换地址。
-5. 启动：`tailcat --json --key=… serve --log [--allow=…] 13080:<socket>`。
+5. 启动：socket 模式为 `tailcat --json --key=… serve --log [--allow=…] 13080:<socket>`；TCP 模式为 `… serve --log [--allow=…] <port>:127.0.0.1:<port>`。
 6. 上线：stdout 的 `{"listenAddr":"tc…"}` 或 stderr 的 `Server listening …` 任一线索都会把状态置为 `online`；面板开始显示地址、二维码和 forwarded 命令。
 7. 退出：意外退出且 `restartEnabled` 时按指数退避重启，连续失败达到 `maxRestartAttempts` 后停在 `error`；主动停止不重启。
 8. 安装：面板点“一键安装 tailcat”后，`RemoteAccess.installTailcat()` 串行排队，先停掉当前隧道（如果存在），下载/校验/解压/探测，原子替换受管可执行文件，再按原来的 `desired` 状态恢复隧道。安装失败会恢复旧进程。
@@ -79,7 +79,7 @@ sequenceDiagram
 
 1. 配置了非默认 `binaryPath`：完全按配置解析，一键安装会拒绝执行，避免“装了但没用上”。
 2. 默认 `binaryPath` 且受管目录里有可执行文件：使用受管版本。
-3. 否则使用 PATH 或常见安装位置（例如 macOS 的 Homebrew 前缀、Linux 的 `/usr/local/bin`）里的系统 tailcat。
+3. 否则使用 PATH 或常见安装位置（例如 macOS 的 Homebrew 前缀、Linux 的 `/usr/local/bin`）里的系统 tailcat；若探测到版本低于 0.8.0，则拒绝启动并提示升级或安装受管副本。
 
 因此，用户之前自己安装的 tailcat 会被直接使用；只有用户在面板点击安装后，才产生受管副本。
 
@@ -87,7 +87,7 @@ sequenceDiagram
 
 | 位置 | 内容 | 谁写 |
 | --- | --- | --- |
-| `$DSH_HOME/tailcat-remote.sock` | door 的 Unix socket，模式 0600 | Door |
+| `$DSH_HOME/tailcat-remote.sock` | door 的 Unix socket，模式 0600（Windows 使用回环 TCP） | Door |
 | `$DSH_HOME/tailcat-remote/devices.json` | 设备公钥白名单，模式 0600，原子替换 | RemoteAccess |
 | `$DSH_HOME/tailcat-remote/bin/tailcat[.exe]` | 受管可执行文件，模式 0755，原子替换 | TailcatInstaller |
 | `$DSH_HOME/tailcat-remote/bin/tailcat.json` | 受管版本、来源、校验值、安装时间，模式 0600 | TailcatInstaller |
@@ -149,8 +149,8 @@ sequenceDiagram
 
 ## 测试
 
-`node --test test/*.test.mjs` 覆盖纯逻辑：地址/日志解析、argv 构造、QR 矩阵、白名单持久化、配置默认值与 manifest，以及安装器的平台矩阵、校验清单解析、系统 tailcat 检测。
+`node --test` 覆盖纯逻辑：地址/日志解析、argv 构造、QR 矩阵、白名单持久化、配置默认值与 manifest，以及安装器的平台矩阵、校验清单解析、系统 tailcat 检测和版本下限。
 
-网络行为（真实下载、解压、运行 tailcat、cookie 认领、WebSocket）由 `.github/workflows/installer-smoke.yml` 在 Linux、Windows、macOS runner 上执行；它使用真实 GitHub release，并在测试后清理临时 DSH_HOME。普通 CI 仍然只做 `npm ci`、语法检查、单元测试和 `npm pack --dry-run`，避免每次提交都依赖外部网络。
+网络行为（真实下载、解压、运行 tailcat、serve 目标）由 `.github/workflows/installer-smoke.yml` 在 Linux、Windows、macOS runner 上执行；它使用真实 GitHub release，并在测试后清理临时目录。普通 CI 在三种 OS 上做 `npm ci`、语法检查、单元测试和 `npm pack --dry-run`，避免每次提交都依赖外部网络；cookie 认领、WebSocket 等完整浏览器路径不在 CI 的 smoke 范围内。
 
 没有构建步骤：包直接发布源码，客户端文件是原生 `React.createElement`，不需要打包。
