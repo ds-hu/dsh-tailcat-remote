@@ -7,6 +7,9 @@ import os from 'node:os';
 import path from 'node:path';
 import { TailcatInstaller } from '../../src/installer.js';
 
+/** The User-Agent version the installer reports; read from the package so a release needs no CI edit. */
+const { version: pluginVersion } = JSON.parse(fs.readFileSync(new URL('../../package.json', import.meta.url), 'utf8'));
+
 /**
  * CI-only smoke test for the managed installer. It uses the real GitHub
  * release, checksum verification, extraction, and binary probe on each
@@ -111,7 +114,7 @@ try {
     { logger },
     {
       logger,
-      releaseTag: 'v0.1.3',
+      releaseTag: `v${pluginVersion}`,
       requestedBinary: 'tailcat',
       resolveExecutable,
       runCommand,

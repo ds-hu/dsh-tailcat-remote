@@ -1,0 +1,115 @@
+name: Desktop profile
+
+# The Electron-owned `desktop` profile cannot be booted by the public CLI
+# ("managed exclusively by the Electron application"), and no Electron runs on
+# a hosted runner. This workflow boots the same profile through the exported
+# `runProfile` entry the desktop carrier itself uses, with its exact arguments
+# (loopback, OS-assigned port, no browser handoff), then exercises the
+# remote-access path over the wire. The ubuntu job additionally drives a real
+# Chromium through the door and captures the panel screenshot.
+#
+# Primary target: the Windows job proves the loopback-TCP door and the desktop
+# surface there, because the Windows desktop application is the shipped client.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'index.js'
+      - 'client.js'
+      - 'cordis.patch.yml'
+      - 'package.json'
+      - 'src/**'
+      - 'scripts/ci/desktop-boot.mjs'
+      - 'scripts/ci/desktop-profile.mjs'
+      - 'scripts/ci/desktop-ui.mjs'
+      - 'scripts/ci/page.mjs'
+      - 'scripts/ci/tailcat-stub.sh'
+      - '.github/workflows/desktop-profile.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  desktop:
+    name: desktop profile on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            autostart: 'false'
+            listen: ''
+            ui: 'false'
+          - os: macos-latest
+            autostart: 'false'
+            listen: ''
+            ui: 'false'
+          - os: ubuntu-latest
+            autostart: 'true'
+            listen: tcp
+            ui: 'true'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci --no-audit --no-fund
+
+      - name: Install the Harness CLI and pnpm
+        run: npm install -g pnpm@11 @deepseek-ai/dsh@0.2.2-rc.5
+
+      - name: Resolve the installed Harness package and a throwaway home
+        shell: bash
+        run: |
+          install_root="$(npm root -g)/@deepseek-ai/dsh"
+          if [ ! -f "$install_root/package.json" ]; then
+            echo "the installed Harness package was not found at $install_root" >&2
+            exit 1
+          fi
+          printf 'DSH_INSTALL_ROOT=%s\n' "$install_root" >> "$GITHUB_ENV"
+          printf 'DSH_HOME=%s\n' "$RUNNER_TEMP/dsh-home" >> "$GITHUB_ENV"
+
+      - name: Put the CI tailcat stub on PATH
+        if: matrix.autostart == 'true'
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/bin"
+          cp scripts/ci/tailcat-stub.sh "$RUNNER_TEMP/bin/tailcat"
+          chmod +x "$RUNNER_TEMP/bin/tailcat"
+          printf '%s\n' "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/bin/tailcat" version
+
+      - name: Install Playwright Chromium
+        if: matrix.ui == 'true'
+        run: |
+          npm install --no-save --no-package-lock playwright@1.64.0
+          npx playwright install --with-deps chromium
+
+      - name: Boot the desktop profile and check the remote path
+        env:
+          DSH_DESKTOP_AUTOSTART: ${{ matrix.autostart }}
+          DSH_DESKTOP_LISTEN: ${{ matrix.listen }}
+          DSH_DESKTOP_UI: ${{ matrix.ui == 'true' && '1' || '0' }}
+        run: node scripts/ci/desktop-profile.mjs
+
+      - name: Upload the desktop panel screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-panel-${{ matrix.os }}
+          path: |
+            docs/screenshots/04-desktop.png
+            docs/screenshots/debug-desktop.png
+          if-no-files-found: ignore
+
+      - name: Desktop host log (failure diagnostics)
+        if: failure()
+        shell: bash
+        run: tail -200 "$DSH_HOME/desktop-boot.log" || true
