@@ -50,7 +50,7 @@ window.__ModuleLoader__.load({
       stepInstall: '在客户端设备安装 tailcat。',
       stepRun: '运行下面的命令，或扫描二维码把地址带到那台设备。',
       stepOpen: '在客户端浏览器打开 http://127.0.0.1:{localPort}/。',
-      installHint: '可通过 Homebrew、发行版包或 GitHub Release 安装 tailcat；Linux 下载后赋予可执行权限并放进 PATH。',
+      installHint: '插件可以自动安装 tailcat；如果自动安装不可用，也可以从 GitHub Release 手动安装并设置 binaryPath。',
       securityTitle: '安全',
       allowOffTitle: '地址就是唯一的钥匙',
       allowOffBody: '任何拿到 tailcat 地址的人都能访问本 Harness。在下方添加至少一个客户端公钥后，访问才会限制在已配对设备。',
@@ -90,8 +90,37 @@ window.__ModuleLoader__.load({
       unavailableBody: '插件无法读取控制接口。请刷新页面或查看 Host 日志。',
       sessionExpired: '浏览器会话已过期，请重新打开 dsh web 输出的地址。',
       setupTitle: '安装 tailcat',
-      setupBody: '插件找不到 tailcat 可执行文件。安装后重试。',
+      setupBody: '插件找不到 tailcat 可执行文件。可以一键安装，也可以使用系统已有的 tailcat。',
       setupRetry: '重新检测',
+      installMethodDownload: '安装方式：下载官方 {asset}，校验 SHA-256 后解压。',
+      installMethodBrew: '安装方式：Homebrew（{command}）。',
+      installButton: '一键安装 tailcat',
+      installReinstall: '重新安装受管版本',
+      installBusy: '正在安装 tailcat…',
+      installPhaseChecksums: '正在获取官方 SHA-256 校验值…',
+      installPhaseDownload: '正在下载 tailcat…',
+      installPhaseVerify: '正在校验下载文件…',
+      installPhaseExtract: '正在解压…',
+      installPhaseInstall: '正在安装…',
+      installPhaseHomebrew: '正在通过 Homebrew 安装 tailcat，这可能需要几分钟…',
+      installProgress: '{percent}%（{received} / {total}）',
+      installProgressUnknown: '已下载 {received}',
+      installFailed: '安装失败',
+      installDetected: '已检测到系统 tailcat',
+      installDetectedBody: '版本 {version}，路径 {path}。插件会直接使用它，不需要重复安装。',
+      installChecking: '正在检查系统是否已安装 tailcat…',
+      installSystemMissing: '系统 PATH 中没有找到 tailcat。',
+      installUnsupported: '当前平台 {platform}/{arch} 暂无自动安装。',
+      installConfigOverride: 'binaryPath 当前为 {path}。一键安装只会写入受管目录，不会覆盖该配置；请改回 tailcat 或手动安装到该路径。',
+      installManual: '手动安装说明',
+      installManagedNote: '受管版本位于 {path}，不会修改系统 PATH。',
+      diagBinarySource: '可执行文件来源',
+      diagInstallSource: 'tailcat 安装',
+      sourceManaged: '受管安装',
+      sourcePath: '系统 PATH',
+      sourceConfig: '配置指定',
+      sourceUnavailable: '未检测到',
+      noticeInstalled: 'tailcat 已安装。',
       firstRun: '首次启动：tailcat 正在生成保存密钥并向 DERP 中继探测路由，可能需要一分钟。',
       modeStable: '保存密钥（稳定）',
       modeEphemeral: '临时密钥（重启后变化）',
@@ -154,7 +183,7 @@ window.__ModuleLoader__.load({
       stepInstall: 'Install tailcat on the client device.',
       stepRun: 'Run the command, or scan the QR code to move the address to that device.',
       stepOpen: 'Open http://127.0.0.1:{localPort}/ in the client browser.',
-      installHint: 'Install tailcat with Homebrew, a release binary, or another supported package. On Linux, download it from the GitHub release, make it executable, and put it on PATH.',
+      installHint: 'The plugin can install tailcat automatically. If that is unavailable, install it from the GitHub release and set binaryPath.',
       securityTitle: 'Security',
       allowOffTitle: 'The address is the only key',
       allowOffBody: 'Anyone who obtains the tailcat address can reach this Harness. Add at least one client public key below to restrict access to paired devices.',
@@ -194,8 +223,37 @@ window.__ModuleLoader__.load({
       unavailableBody: 'The plugin could not read its control API. Reload the page or check the Host log.',
       sessionExpired: 'The browser session expired; reopen the URL printed by dsh web.',
       setupTitle: 'Install tailcat',
-      setupBody: 'The plugin could not find the tailcat executable. Install it, then retry.',
+      setupBody: 'The plugin could not find the tailcat executable. Install it here or use an existing system copy.',
       setupRetry: 'Check again',
+      installMethodDownload: 'Method: download the official {asset} and verify its SHA-256 before extraction.',
+      installMethodBrew: 'Method: Homebrew ({command}).',
+      installButton: 'Install tailcat',
+      installReinstall: 'Reinstall managed copy',
+      installBusy: 'Installing tailcat…',
+      installPhaseChecksums: 'Fetching the official SHA-256 manifest…',
+      installPhaseDownload: 'Downloading tailcat…',
+      installPhaseVerify: 'Verifying the download…',
+      installPhaseExtract: 'Extracting…',
+      installPhaseInstall: 'Installing…',
+      installPhaseHomebrew: 'Installing tailcat through Homebrew; this can take a few minutes…',
+      installProgress: '{percent}% ({received} / {total})',
+      installProgressUnknown: '{received} downloaded',
+      installFailed: 'Installation failed',
+      installDetected: 'Existing tailcat detected',
+      installDetectedBody: 'Version {version}, path {path}. The plugin uses it directly; no duplicate install is needed.',
+      installChecking: 'Checking whether tailcat is already installed…',
+      installSystemMissing: 'No tailcat was found on the system PATH.',
+      installUnsupported: 'Automatic installation is unavailable on {platform}/{arch}.',
+      installConfigOverride: 'binaryPath is set to {path}. A managed install only writes the plugin directory and will not override that setting; set it back to tailcat or install manually at that path.',
+      installManual: 'Manual install instructions',
+      installManagedNote: 'The managed copy lives at {path}; the system PATH is not modified.',
+      diagBinarySource: 'Executable source',
+      diagInstallSource: 'tailcat install',
+      sourceManaged: 'Managed',
+      sourcePath: 'System PATH',
+      sourceConfig: 'Configured path',
+      sourceUnavailable: 'Not detected',
+      noticeInstalled: 'tailcat is installed.',
       firstRun: 'First run: tailcat is creating a saved key and asking a DERP relay for a route. This can take a minute.',
       modeStable: 'Saved (stable)',
       modeEphemeral: 'Ephemeral (changes on restart)',
@@ -291,6 +349,8 @@ window.__ModuleLoader__.load({
       .tcr-notice-ok { border-color: color-mix(in srgb, var(--dsw-alias-state-success-primary) 35%, var(--dsw-alias-border-l3)); background: color-mix(in srgb, var(--dsw-alias-state-success-primary) 9%, var(--dsw-alias-bg-layer-1)); }
       .tcr-notice-error { border-color: color-mix(in srgb, var(--dsw-alias-state-error-primary) 35%, var(--dsw-alias-border-l3)); background: color-mix(in srgb, var(--dsw-alias-state-error-primary) 9%, var(--dsw-alias-bg-layer-1)); color: var(--dsw-alias-label-primary); }
       .tcr-footer { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; color: var(--dsw-alias-label-tertiary); font-size: 11.5px; line-height: 1.6; padding-top: 6px; }
+      .tcr-progress { height: 6px; overflow: hidden; border-radius: 999px; background: var(--dsw-alias-bg-layer-3); margin-top: 8px; }
+      .tcr-progress-bar { height: 100%; border-radius: inherit; background: var(--dsw-alias-brand-primary); transition: width .25s ease; }
       .tcr-spinner { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--dsw-alias-border-l2); border-top-color: var(--dsw-alias-brand-primary); animation: tcr-spin .8s linear infinite; }
       @keyframes tcr-spin { to { transform: rotate(360deg); } }
       .tcr-empty { color: var(--dsw-alias-label-tertiary); font-size: 13px; }
@@ -572,7 +632,9 @@ window.__ModuleLoader__.load({
                 ? 'busyRotate'
                 : busy === 'devices'
                   ? 'busySave'
-                  : null;
+                  : busy === 'install'
+                    ? 'installBusy'
+                    : null;
 
       const reportCopy = (text, ok) => setLocalNotice({ kind: ok ? 'ok' : 'error', text });
 
@@ -602,6 +664,55 @@ window.__ModuleLoader__.load({
       }
 
       const binaryMissing = tailcat.binary?.resolved === null && phase === 'error';
+      const installer = snapshot.installer;
+      const system = installer?.system;
+      const systemFound = system?.status === 'found';
+      const configOverride = snapshot.config.binaryPath !== 'tailcat';
+      const installerBusy = busy === 'install' || Boolean(installer?.busy);
+      const anyBusy = Boolean(busy) || Boolean(installer?.busy);
+      const progress = installer?.progress;
+      const percent = progress && Number.isFinite(progress.percent) ? progress.percent : null;
+      const phaseText = progress
+        ? progress.phase === 'checksums'
+          ? t('installPhaseChecksums')
+          : progress.phase === 'verifying'
+            ? t('installPhaseVerify')
+            : progress.phase === 'extracting'
+              ? t('installPhaseExtract')
+              : progress.phase === 'installing'
+                ? t('installPhaseInstall')
+                : progress.phase === 'homebrew'
+                  ? t('installPhaseHomebrew')
+                  : t('installPhaseDownload')
+        : null;
+      const installProgress = progress
+        ? h(
+            'div',
+            { className: 'tcr-install-progress' },
+            h(
+              'p',
+              { className: 'tcr-hint', style: { marginTop: 0 } },
+              percent === null
+                ? h('span', { className: 'tcr-spinner', style: { display: 'inline-block', verticalAlign: 'middle', marginRight: 8 } })
+                : null,
+              phaseText,
+              progress.phase === 'downloading' && progress.total > 0
+                ? ` ${t('installProgress', { percent, received: formatBytes(progress.received), total: formatBytes(progress.total) })}`
+                : progress.phase === 'downloading' && progress.received > 0
+                  ? ` ${t('installProgressUnknown', { received: formatBytes(progress.received) })}`
+                  : null,
+            ),
+            percent !== null ? h('div', { className: 'tcr-progress' }, h('div', { className: 'tcr-progress-bar', style: { width: `${percent}%` } })) : null,
+          )
+        : null;
+      const sourceLabel =
+        tailcat.binary?.source === 'managed'
+          ? t('sourceManaged')
+          : tailcat.binary?.source === 'config'
+            ? t('sourceConfig')
+            : tailcat.binary?.source === 'path'
+              ? t('sourcePath')
+              : t('sourceUnavailable');
       const install = snapshot.plugin?.name ?? '@ds-hu/dsh-tailcat-remote';
       const command = pairing?.command ?? '';
       const localUrl = pairing ? `http://127.0.0.1:${pairing.localPort}/` : '';
@@ -651,7 +762,7 @@ window.__ModuleLoader__.load({
                     Button,
                     {
                       variant: 'primary',
-                      disabled: Boolean(busy),
+                      disabled: anyBusy,
                       onClick: () => void act('start', {}, 'noticeStarted'),
                     },
                     t('start'),
@@ -659,17 +770,17 @@ window.__ModuleLoader__.load({
                 : h(
                     Button,
                     {
-                      disabled: Boolean(busy),
+                      disabled: anyBusy,
                       onClick: () => void act('stop', {}, 'noticeStopped'),
                     },
                     t('stop'),
                   ),
               h(
                 Button,
-                { disabled: Boolean(busy), onClick: () => void act('restart', {}, 'noticeRestarted') },
+                { disabled: anyBusy, onClick: () => void act('restart', {}, 'noticeRestarted') },
                 t('restart'),
               ),
-              h(Button, { variant: 'ghost', disabled: Boolean(busy), onClick: () => void reload() }, t('refresh')),
+              h(Button, { variant: 'ghost', disabled: anyBusy, onClick: () => void reload() }, t('refresh')),
             ),
           ),
 
@@ -690,12 +801,83 @@ window.__ModuleLoader__.load({
             ? h(Alert, { tone: 'danger', title: t('diagLastError') }, h('p', { className: 'tcr-mono' }, tailcat.lastError))
             : null,
 
+          !binaryMissing && systemFound && !installer?.installed
+            ? h(
+                Alert,
+                { tone: 'info', title: t('installDetected') },
+                h('p', null, t('installDetectedBody', { version: system.version ?? t('unknown'), path: system.path })),
+              )
+            : null,
+
           binaryMissing
             ? h(
                 Card,
-                { title: t('setupTitle'), subtitle: t('setupBody') },
-                h('p', { className: 'tcr-hint' }, t('installHint')),
-                h('div', { className: 'tcr-actions' }, h(Button, { variant: 'primary', disabled: Boolean(busy), onClick: () => void act('restart', {}, 'noticeRestarted') }, t('setupRetry'))),
+                {
+                  title: systemFound ? t('installDetected') : t('setupTitle'),
+                  subtitle: systemFound
+                    ? t('installDetectedBody', { version: system.version ?? t('unknown'), path: system.path })
+                    : system?.status === 'checking' || !system
+                      ? t('installChecking')
+                      : t('setupBody'),
+                },
+                !systemFound
+                  ? h('p', { className: 'tcr-hint' }, t('installHint'))
+                  : null,
+                configOverride
+                  ? h(Alert, { tone: 'warn', title: t('setupTitle') }, t('installConfigOverride', { path: snapshot.config.binaryPath }))
+                  : null,
+                !systemFound && installer?.supported && !configOverride
+                  ? h(
+                      'p',
+                      { className: 'tcr-hint' },
+                      installer.method === 'brew'
+                        ? t('installMethodBrew', { command: installer.command })
+                        : t('installMethodDownload', { asset: installer.asset ?? 'tailcat' }),
+                    )
+                  : null,
+                !installer?.supported
+                  ? h(Alert, { tone: 'warn' }, t('installUnsupported', { platform: installer?.platform ?? 'unknown', arch: installer?.arch ?? 'unknown' }))
+                  : null,
+                installer?.error
+                  ? h(Alert, { tone: 'danger', title: t('installFailed') }, h('p', { className: 'tcr-mono' }, installer.error))
+                  : null,
+                installerBusy ? installProgress : null,
+                h(
+                  'div',
+                  { className: 'tcr-actions' },
+                  !systemFound && installer?.supported && !configOverride
+                    ? h(
+                        Button,
+                        {
+                          variant: 'primary',
+                          disabled: installerBusy,
+                          onClick: () => void act('install', {}, 'noticeInstalled'),
+                        },
+                        installerBusy ? t('installBusy') : installer?.installed ? t('installReinstall') : t('installButton'),
+                      )
+                    : null,
+                  h(
+                    Button,
+                    { variant: 'ghost', disabled: installerBusy, onClick: () => void act('restart', {}, 'noticeRestarted') },
+                    t('setupRetry'),
+                  ),
+                  installer?.manualUrl
+                    ? h(
+                        'a',
+                        {
+                          className: 'tcr-btn tcr-btn-ghost',
+                          href: installer.manualUrl,
+                          target: '_blank',
+                          rel: 'noopener noreferrer',
+                          style: { textDecoration: 'none' },
+                        },
+                        t('installManual'),
+                      )
+                    : null,
+                ),
+                installer?.installed && installer.binaryPath
+                  ? h('p', { className: 'tcr-hint' }, t('installManagedNote', { path: installer.binaryPath }))
+                  : null,
               )
             : null,
 
@@ -827,6 +1009,8 @@ window.__ModuleLoader__.load({
               h(Row, { label: t('diagKeyName') }, h('span', { className: 'tcr-mono' }, tailcat.keyName)),
               h(Row, { label: t('diagVersion') }, tailcat.binary?.version ?? t('unknown')),
               h(Row, { label: t('diagBinary') }, h('span', { className: 'tcr-mono' }, tailcat.binary?.resolved ?? snapshot.config.binaryPath)),
+              h(Row, { label: t('diagBinarySource') }, sourceLabel),
+              h(Row, { label: t('diagInstallSource') }, installer?.installed ? `${t('sourceManaged')} · ${installer.installedVersion ?? t('unknown')}` : systemFound ? `${t('sourcePath')} · ${system.version ?? t('unknown')}` : t('sourceUnavailable')),
               h(Row, { label: t('diagRegion') }, tailcat.region ? `${tailcat.region.name} (${tailcat.region.id})` : t('unknown')),
               h(Row, { label: t('diagRestarts') }, String(tailcat.restarts ?? 0)),
               h(Row, { label: t('diagDoor') }, snapshot.door.mode === 'socket' ? `${t('modeSocket')} · ${snapshot.door.socketPath}` : `${t('modeTcp')} · 127.0.0.1:${snapshot.door.port}`),
@@ -950,6 +1134,17 @@ window.__ModuleLoader__.load({
       if (ms < 1_000) return `${Math.round(ms)} ms`;
       if (ms < 60_000) return `${(ms / 1_000).toFixed(1)} s`;
       return `${Math.floor(ms / 60_000)}m ${Math.round((ms % 60_000) / 1_000)}s`;
+    }
+
+    /**
+     * @param {number | null | undefined} bytes - byte count.
+     * @returns {string} compact size for installer progress.
+     */
+    function formatBytes(bytes) {
+      if (typeof bytes !== 'number' || !Number.isFinite(bytes) || bytes <= 0) return '0 B';
+      if (bytes < 1_024) return `${bytes} B`;
+      if (bytes < 1_048_576) return `${(bytes / 1_024).toFixed(1)} KB`;
+      return `${(bytes / 1_048_576).toFixed(1)} MB`;
     }
 
     /**

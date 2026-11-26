@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -7,9 +8,19 @@ export function dshHome() {
   return configured ? path.resolve(configured) : path.join(os.homedir(), '.dsh');
 }
 
-/** Plugin-owned runtime-data directory (device allow-list only). */
+/** Plugin-owned runtime data (devices and the managed tailcat copy). */
 export function dataDir() {
   return path.join(dshHome(), 'tailcat-remote');
+}
+
+/** Directory holding the plugin-managed tailcat executable. */
+export function managedBinaryDir() {
+  return path.join(dataDir(), 'bin');
+}
+
+/** Absolute path of the plugin-managed tailcat executable. */
+export function managedBinaryPath(platform = process.platform) {
+  return path.join(managedBinaryDir(), platform === 'win32' ? 'tailcat.exe' : 'tailcat');
 }
 
 /** Default Unix-domain door socket inside the harness data directory. */
@@ -21,6 +32,32 @@ export function defaultSocketPath() {
 export function userConfigDir() {
   const configured = process.env.XDG_CONFIG_HOME?.trim();
   return configured ? path.resolve(configured) : path.join(os.homedir(), '.config');
+}
+
+/** Common package-manager locations for a user-installed tailcat. */
+export function knownTailcatPaths(platform = process.platform) {
+  if (platform === 'darwin') return ['/opt/homebrew/bin/tailcat', '/usr/local/bin/tailcat'];
+  if (platform === 'linux') return ['/usr/local/bin/tailcat', '/usr/bin/tailcat', '/bin/tailcat'];
+  return [];
+}
+
+/**
+ * Find an executable tailcat in a well-known package-manager location.
+ * @param {string} [platform] - Node platform.
+ * @returns {string | null} absolute path when present.
+ */
+export function findKnownTailcat(platform = process.platform) {
+  for (const candidate of knownTailcatPaths(platform)) {
+    try {
+      if (fs.statSync(candidate).isFile()) {
+        fs.accessSync(candidate, fs.constants.X_OK);
+        return candidate;
+      }
+    } catch {
+      // Keep looking.
+    }
+  }
+  return null;
 }
 
 /**

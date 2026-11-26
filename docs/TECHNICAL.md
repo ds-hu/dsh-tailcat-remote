@@ -16,13 +16,15 @@
 
 ```
 Host 插件
-├── Door            Unix socket 上的本地 HTTP 门卫
-├── TailcatSupervisor   tailcat serve 进程的生命周期
-└── RemoteAccess       把两者与设备列表、配置、状态组合起来
+├── Door               Unix socket 上的本地 HTTP 门卫
+├── TailcatSupervisor  tailcat serve 进程的生命周期
+├── TailcatInstaller   检测系统 tailcat，按需安装受管版本
+└── RemoteAccess       把三者与设备列表、配置、状态组合起来
 ```
 
 - **Door** 是唯一能被 tailcat 访问的本地端点。默认是 `$DSH_HOME/tailcat-remote.sock`，权限 0600；`tailcat serve` 把虚拟端口 13080 映射到它。它不做自己的鉴权，而是把请求交给 DSH 的 `connection` 服务判断。这样远程访问与本地访问共用同一套 cookie、Host/Origin 校验和 owner 语义。
 - **TailcatSupervisor** 只负责一个子进程：确保可执行文件与保存密钥存在，拼出 argv，解析 stdout 地址与 stderr 访问日志，做崩溃重启和地址轮换。
+- **TailcatInstaller** 负责“用户到底装没装 tailcat”。它只做检测和显式安装：检测不会写文件；安装只在面板点击后发生。Linux/Windows 下载官方 release 资产并校验 SHA-256；macOS 通过 Homebrew；系统里已有的 tailcat 永远优先被识别，不会被下载覆盖。
 - **RemoteAccess** 是门面。它串行化所有变更操作，向面板提供一份快照，避免“页面连续点两次启动”这类竞态。
 
 没有把 13080 直接开在 TCP 上。TCP `127.0.0.1` 仍对同机所有进程可见，Unix socket 的 0600 权限更小；tailcat 能在同机直接连 socket，不需要 TCP。配置保留 `listen: tcp` 只是为了诊断或在不支持 Unix socket 的环境里逃生。
@@ -63,14 +65,23 @@ sequenceDiagram
 
 1. Host 插件激活，`RemoteAccess.start()` 先启动 door，再按 `autoStart` 启动 tailcat。
 2. Door 监听 Unix socket。若 socket 文件已存在且可连接，说明另一个实例还在用，door 报错；若是上次崩溃留下的死文件，door 在确认不可连接后删除并重建。
-3. 可执行文件解析：`subprocess.resolveExecutable(binaryPath, env)`；失败会进入 `error` 状态，并在面板显示安装提示。
+3. 可执行文件解析：显式 `binaryPath` 优先；默认值时先看受管目录 `$DSH_HOME/tailcat-remote/bin/tailcat`，再看 `subprocess.resolveExecutable` 解析的 PATH 和常见包管理器位置。失败会进入 `error` 状态，并在面板显示安装提示。
 4. 保存密钥：`stable` 模式检查 `<user config>/tailcat/keys/<keyName>.private.json`，不存在就运行一次 `tailcat genkey --fixed-region`。`ephemeral` 模式传 `--key=new`，每次启动换地址。
 5. 启动：`tailcat --json --key=… serve --log [--allow=…] 13080:<socket>`。
 6. 上线：stdout 的 `{"listenAddr":"tc…"}` 或 stderr 的 `Server listening …` 任一线索都会把状态置为 `online`；面板开始显示地址、二维码和 forwarded 命令。
 7. 退出：意外退出且 `restartEnabled` 时按指数退避重启，连续失败达到 `maxRestartAttempts` 后停在 `error`；主动停止不重启。
-8. 停用插件时先停 tailcat，再关 door 并删除 socket 文件。
+8. 安装：面板点“一键安装 tailcat”后，`RemoteAccess.installTailcat()` 串行排队，先停掉当前隧道（如果存在），下载/校验/解压/探测，原子替换受管可执行文件，再按原来的 `desired` 状态恢复隧道。安装失败会恢复旧进程。
+9. 停用插件时先停 tailcat，再关 door 并删除 socket 文件。
 
-`RemoteAccess` 用一个 promise 队列串行化 `start/stop/restart/rotate/saveDevices`，所以页面的重复点击不会产生两个 tailcat 进程。读取快照不走队列。
+`RemoteAccess` 用一个 promise 队列串行化 `start/stop/restart/rotate/saveDevices/install`，所以页面的重复点击不会产生两个 tailcat 进程或两个并发下载。读取快照不走队列。
+
+### 受管安装的优先级
+
+1. 配置了非默认 `binaryPath`：完全按配置解析，一键安装会拒绝执行，避免“装了但没用上”。
+2. 默认 `binaryPath` 且受管目录里有可执行文件：使用受管版本。
+3. 否则使用 PATH 或常见安装位置（例如 macOS 的 Homebrew 前缀、Linux 的 `/usr/local/bin`）里的系统 tailcat。
+
+因此，用户之前自己安装的 tailcat 会被直接使用；只有用户在面板点击安装后，才产生受管副本。
 
 ## 状态与文件
 
@@ -78,6 +89,8 @@ sequenceDiagram
 | --- | --- | --- |
 | `$DSH_HOME/tailcat-remote.sock` | door 的 Unix socket，模式 0600 | Door |
 | `$DSH_HOME/tailcat-remote/devices.json` | 设备公钥白名单，模式 0600，原子替换 | RemoteAccess |
+| `$DSH_HOME/tailcat-remote/bin/tailcat[.exe]` | 受管可执行文件，模式 0755，原子替换 | TailcatInstaller |
+| `$DSH_HOME/tailcat-remote/bin/tailcat.json` | 受管版本、来源、校验值、安装时间，模式 0600 | TailcatInstaller |
 | `<user config>/tailcat/keys/<keyName>.private.json` | tailcat 保存的服务器密钥 | tailcat 自己 |
 | `<user config>/tailcat/keys/<client>.private.json` | 客户端身份密钥（在客户端机器） | tailcat 自己 |
 
@@ -89,7 +102,7 @@ sequenceDiagram
 
 | 字段 | 默认 | 说明 |
 | --- | --- | --- |
-| `binaryPath` | `tailcat` | PATH 名或绝对路径。找不到时面板给出安装提示。 |
+| `binaryPath` | `tailcat` | PATH 名或绝对路径。默认值允许受管安装；显式路径优先，且会禁用在页面里覆盖它。 |
 | `port` | `13080` | tailcat 隧道内的虚拟端口，不是本机监听端口。 |
 | `listen` | `socket` | `socket` 使用 0600 Unix socket；`tcp` 绑定 `127.0.0.1:<port>`。 |
 | `socketPath` | 空 | 空表示 `$DSH_HOME/tailcat-remote.sock`。 |
@@ -115,13 +128,18 @@ sequenceDiagram
 - 动作 `POST` 同一路径，成功后用响应里的快照立即刷新；
 - 二维码由 Host 生成矩阵，客户端只把矩阵转成一条 SVG path，避免把 56KB 的 QR 生成器再打包进客户端；
 - 地址/命令/本地 URL 都有复制按钮，复制失败时回退到隐藏 textarea + `execCommand`；
-- “更换地址”是两步确认，并明确提示：旧地址立即失效，但已签发的 DSH 浏览器 cookie 不会因此撤销。
+- “更换地址”是两步确认，并明确提示：旧地址立即失效，但已签发的 DSH 浏览器 cookie 不会因此撤销；
+- 安装卡片显示系统检测结果、平台安装方式、下载进度、错误和手动安装链接。
 
 ## 失败模式
 
 | 现象 | 原因 | 插件行为 |
 | --- | --- | --- |
-| `tailcat-not-found` | PATH/配置里没有 tailcat | 状态 `error`，面板显示安装提示；door 仍可用 |
+| `tailcat-not-found` | PATH/配置里没有 tailcat | 状态 `error`，面板显示安装卡片；door 仍可用 |
+| `tailcat-platform-unsupported` | 当前 OS/架构没有自动安装目标 | 面板显示手动安装链接；不影响手动 `binaryPath` |
+| `tailcat-brew-missing` | macOS 没有 Homebrew | 提示安装 Homebrew 或手动配置 |
+| `tailcat-checksum-missing` / `tailcat-checksum-mismatch` | 官方校验清单缺项或下载被篡改 | 拒绝安装，保留旧版本 |
+| `tailcat-download-failed` / `tailcat-extract-unavailable` | 网络失败、没有 tar/解压能力 | 安装失败，页面给出底层错误 |
 | `door-socket-missing` | door 未起或 socket 被删 | supervisor 拒绝启动，提示先恢复 door |
 | `door-tls-unsupported` | Web listener 是 HTTPS | door 拒绝启动，要求在前面终止 TLS 或改用 HTTP 本地监听 |
 | `EADDRINUSE`/socket 被占用 | 另一个 DSH 实例或残留进程 | door 报错；不会杀掉不认识的进程 |
@@ -131,6 +149,8 @@ sequenceDiagram
 
 ## 测试
 
-`node --test test/*.test.mjs` 只覆盖纯逻辑：地址/日志解析、argv 构造、QR 矩阵、白名单持久化、配置默认值与 manifest。网络行为（真实 tailcat、cookie 认领、WebSocket）靠人工在安装了 tailcat 的环境里验证，避免把外部网络依赖塞进 CI。
+`node --test test/*.test.mjs` 覆盖纯逻辑：地址/日志解析、argv 构造、QR 矩阵、白名单持久化、配置默认值与 manifest，以及安装器的平台矩阵、校验清单解析、系统 tailcat 检测。
 
-CI 只做 `npm ci`、语法检查、单元测试、`npm pack --dry-run`。没有构建步骤：包直接发布源码，客户端文件是原生 `React.createElement`，不需要打包。
+网络行为（真实下载、解压、运行 tailcat、cookie 认领、WebSocket）由 `.github/workflows/installer-smoke.yml` 在 Linux、Windows、macOS runner 上执行；它使用真实 GitHub release，并在测试后清理临时 DSH_HOME。普通 CI 仍然只做 `npm ci`、语法检查、单元测试和 `npm pack --dry-run`，避免每次提交都依赖外部网络。
+
+没有构建步骤：包直接发布源码，客户端文件是原生 `React.createElement`，不需要打包。

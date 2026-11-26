@@ -54,6 +54,9 @@ export function registerControl(ctx, remote) {
           case 'devices':
             result = await remote.saveDevices(body.allow);
             break;
+          case 'install':
+            result = await remote.installTailcat({ force: body.force === true });
+            break;
           default:
             return json(
               { ok: false, error: { code: 'unknown-action', message: `Unknown action ${JSON.stringify(action)}.` } },

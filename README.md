@@ -42,15 +42,7 @@ DeepSeek Harness 默认只在本机监听。想从笔记本、手机或另一台
 
 ## 安装
 
-先安装 [tailcat](https://github.com/tailscale/tailcat#install)。它需要出现在 Host 的 `PATH` 里；也可以稍后在插件配置里写绝对路径 `binaryPath`。
-
-```sh
-# macOS、Linux、Windows、FreeBSD 等都有安装方式
-# 例如静态二进制：
-tailcat version
-```
-
-再把插件装进 web profile：
+把插件装进 web profile：
 
 ```sh
 dsh plugin --profile web add @ds-hu/dsh-tailcat-remote
@@ -70,10 +62,23 @@ dsh plugin --profile web add @ds-hu/dsh-tailcat-remote
 
 也可以在 **插件管理** 里安装这个 bundle，效果相同。
 
+### tailcat 会自动安装
+
+重启 `dsh web` 后打开 **远程访问**。如果 Host 还没有 tailcat，页面会显示安装卡片：
+
+- **Linux / Windows**：点 **一键安装 tailcat**。插件会按 `process.arch` 选择 tailcat 官方 v0.8.0 release 资产，下载后用官方 `checksums.txt` 校验 SHA-256，再解压到 `$DSH_HOME/tailcat-remote/bin/`。不修改系统 `PATH`。
+- **macOS**：如果 Host 有 Homebrew，点同一个按钮会执行 `brew install tailcat`，然后把可执行文件复制到受管目录。没有 Homebrew 时，页面会给出明确提示和手动安装链接。
+- **已经自己安装过 tailcat**：插件启动时会检查 `PATH`，以及 `/opt/homebrew/bin`、`/usr/local/bin`、`/usr/bin` 等常见位置。检测到就直接使用，不会下载，也不会覆盖你的安装。诊断区会显示可执行文件来源和版本。
+- **其他平台或架构**：自动安装不可用时，按 [tailcat 安装说明](https://github.com/tailscale/tailcat#install) 手动安装，再用 `binaryPath` 指向它。`binaryPath` 的优先级高于受管安装。
+
+受管安装只在点击按钮时发生：插件不会在后台静默下载，也不把各平台二进制塞进 npm 包。
+
+> 自动安装只针对 **Host 端**的 tailcat 服务进程。要访问 Harness 的客户端设备仍然需要自己安装 tailcat，用来运行 `tailcat forward`；本插件不包含客户端程序。
+
 ## 使用
 
 1. 重启 Harness，侧边栏打开 **远程访问**。
-2. 确认状态是 **运行中**，地址和二维码已经出现。首次启动要生成保存密钥并探测 DERP 区域，可能需要一分钟。
+2. 如果页面提示缺少 tailcat，先点 **一键安装 tailcat**；否则确认状态是 **运行中**，地址和二维码已经出现。首次启动要生成保存密钥并探测 DERP 区域，可能需要一分钟。
 3. 在要访问的客户端设备上安装 tailcat，运行页面给出的命令，或者扫描二维码取得地址：
 
    ```sh

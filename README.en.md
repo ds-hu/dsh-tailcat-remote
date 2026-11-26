@@ -42,15 +42,7 @@ Remote Access folds that into one plugin. The Host supervises a `tailcat` proces
 
 ## Install
 
-Install [tailcat](https://github.com/tailscale/tailcat#install) first. It must be on the Host's `PATH`; you can also set an absolute `binaryPath` in the plugin config later.
-
-```sh
-# macOS, Linux, Windows, FreeBSD, and more
-# for example, a static binary:
-tailcat version
-```
-
-Then add the plugin to the web profile:
+Add the plugin to the web profile:
 
 ```sh
 dsh plugin --profile web add @ds-hu/dsh-tailcat-remote
@@ -70,10 +62,23 @@ List the package in the profile's `dsh.profile.bundles`, then restart `dsh web`:
 
 Installing the bundle from **Plugin Manager** has the same effect.
 
+### tailcat installation is managed
+
+Restart `dsh web` and open **Remote Access**. If the Host has no tailcat, the page shows an install card:
+
+- **Linux / Windows:** click **Install tailcat**. The plugin selects the official tailcat v0.8.0 asset for `process.arch`, downloads it, verifies its SHA-256 against the official `checksums.txt`, and extracts it to `$DSH_HOME/tailcat-remote/bin/`. The system `PATH` is not modified.
+- **macOS:** if Homebrew is available, the same button runs `brew install tailcat` and copies the executable into the managed directory. Without Homebrew, the page shows a clear message and a manual-install link.
+- **Your own tailcat:** on startup the plugin checks `PATH` and common package locations (`/opt/homebrew/bin`, `/usr/local/bin`, `/usr/bin`, and so on). It uses an existing install directly and never downloads over it. The diagnostics section shows the executable's source and version.
+- **Other platforms or architectures:** install tailcat manually from [the upstream instructions](https://github.com/tailscale/tailcat#install), then point `binaryPath` at it. `binaryPath` takes precedence over the managed copy.
+
+The managed install only runs after you click the button: there is no background download and no per-platform binary payload in the npm package.
+
+> Automatic installation covers the **Host-side** tailcat server only. The client device still needs its own tailcat to run `tailcat forward`; this plugin does not include a client program.
+
 ## Use
 
 1. Restart Harness and open **Remote Access** in the sidebar.
-2. Wait for **Online** and the address. The first start creates a saved key and probes a DERP region, which can take a minute.
+2. If the page reports a missing tailcat, click **Install tailcat** first; otherwise wait for **Online** and the address. The first start creates a saved key and probes a DERP region, which can take a minute.
 3. On the client device, install tailcat and run the command shown on the page, or scan the QR code for the address:
 
    ```sh

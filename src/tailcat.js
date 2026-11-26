@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import readline from 'node:readline';
 import { RemoteAccessError, errorMessage } from './errors.js';
-import { doorEndpoint, tailcatKeyPath } from './paths.js';
+import { doorEndpoint, findKnownTailcat, tailcatKeyPath } from './paths.js';
 import {
   buildGenkeyArgs,
   buildServeArgs,
@@ -27,13 +27,14 @@ export class TailcatSupervisor {
   /**
    * @param {object} ctx - Host plugin context.
    * @param {ReturnType<import('./config.js').resolveConfig>} config - resolved config.
-   * @param {{ devices: ReturnType<import('./devices.js').createDeviceStore>, logger: any }} options - collaborators.
+   * @param {{ devices: ReturnType<import('./devices.js').createDeviceStore>, logger: any, installer?: import('./installer.js').TailcatInstaller }} options - collaborators.
    */
-  constructor(ctx, config, { devices, logger }) {
+  constructor(ctx, config, { devices, logger, installer }) {
     this.ctx = ctx;
     this.config = config;
     this.devices = devices;
     this.logger = logger;
+    this.installer = installer;
     this.events = new EventEmitter();
     this.events.setMaxListeners(50);
 
@@ -43,7 +44,7 @@ export class TailcatSupervisor {
     this.keyMode = config.addressMode === 'ephemeral' ? 'ephemeral' : 'saved';
     this.keyFile = null;
     this.region = null;
-    this.binary = { requested: config.binaryPath, resolved: null, version: null, error: null };
+    this.binary = { requested: config.binaryPath, resolved: null, source: null, version: null, error: null };
     this.restarts = 0;
     this.lastError = null;
     this.lastExit = null;
@@ -182,6 +183,7 @@ export class TailcatSupervisor {
       binary: {
         requested: this.binary.requested,
         resolved: this.binary.resolved,
+        source: this.binary.source,
         version: this.binary.version,
         error: this.binary.error,
       },
@@ -267,19 +269,47 @@ export class TailcatSupervisor {
     }
   }
 
+  /** Forget the resolved executable so the next start picks up an install. */
+  reloadBinary() {
+    this.binary.resolved = null;
+    this.binary.source = null;
+    this.binary.version = null;
+    this.binary.error = null;
+    this.versionPromise = null;
+  }
+
   /** @private */
   async ensureBinary() {
     if (this.binary.resolved) return;
+    const requested = this.config.binaryPath;
+    const managed = this.installer?.binaryPath;
+    if (requested === 'tailcat' && managed && this.installer?.hasInstalled()) {
+      this.binary.resolved = managed;
+      this.binary.source = 'managed';
+      this.binary.error = null;
+      this.logger.info(`tailcat-remote: using managed tailcat at ${managed}`);
+      void this.loadVersion();
+      return;
+    }
     try {
-      const resolved = await this.ctx.subprocess.resolveExecutable(this.config.binaryPath, process.env);
+      let resolved = null;
+      try {
+        resolved = await this.ctx.subprocess.resolveExecutable(requested, process.env);
+      } catch (error) {
+        if (requested !== 'tailcat') throw error;
+        resolved =
+          this.installer?.system?.status === 'found' ? this.installer.system.path : findKnownTailcat(process.platform);
+        if (!resolved) throw error;
+      }
       this.binary.resolved = resolved;
+      this.binary.source = requested === 'tailcat' ? 'path' : 'config';
       this.binary.error = null;
       this.logger.info(`tailcat-remote: using ${resolved}`);
     } catch (error) {
       this.binary.error = errorMessage(error);
       throw new RemoteAccessError(
         'tailcat-not-found',
-        `Cannot find the tailcat executable "${this.config.binaryPath}". Install tailcat, put it on PATH, or set binaryPath in the plugin config. (${errorMessage(error)})`,
+        `Cannot find the tailcat executable "${requested}". Use the install button in Remote Access, put tailcat on PATH, or set binaryPath in the plugin config. (${errorMessage(error)})`,
         503,
       );
     }

@@ -5,6 +5,7 @@ import { createDeviceStore } from './devices.js';
 import { Door } from './door.js';
 import { buildForwardCommand } from './parse.js';
 import { qrMatrix } from './qr.js';
+import { TailcatInstaller } from './installer.js';
 import { TailcatSupervisor } from './tailcat.js';
 
 const LOCAL_CLIENT_PORT = 18_080;
@@ -25,7 +26,16 @@ export class RemoteAccess {
     this.config = config;
     this.logger = ctx.logger;
     this.devices = createDeviceStore({ logger: ctx.logger });
-    this.tailcat = new TailcatSupervisor(ctx, config, { devices: this.devices, logger: ctx.logger });
+    this.installer = new TailcatInstaller(ctx, {
+      logger: ctx.logger,
+      releaseTag: `v${plugin.version}`,
+      requestedBinary: config.binaryPath,
+    });
+    this.tailcat = new TailcatSupervisor(ctx, config, {
+      devices: this.devices,
+      logger: ctx.logger,
+      installer: this.installer,
+    });
     this.door = new Door(ctx, config, ctx.logger);
     this.ops = Promise.resolve();
     this.startPromise = null;
@@ -54,6 +64,11 @@ export class RemoteAccess {
       this.door.lastError = errorMessage(error);
       this.logger.warn(`tailcat-remote: door unavailable: ${errorMessage(error)}`);
     }
+    try {
+      await this.installer.detectSystem();
+    } catch (error) {
+      this.logger.warn(`tailcat-remote: could not inspect an existing tailcat: ${errorMessage(error)}`);
+    }
     if (this.config.autoStart && this.door.phase === 'listening') {
       try {
         await this.tailcat.start();
@@ -68,6 +83,7 @@ export class RemoteAccess {
   startTunnel() {
     return this.enqueue(async () => {
       await this.ensureDoor();
+      await this.installer.detectSystem();
       await this.tailcat.start();
       return this.snapshot();
     });
@@ -85,6 +101,7 @@ export class RemoteAccess {
   restartTunnel() {
     return this.enqueue(async () => {
       await this.ensureDoor();
+      await this.installer.detectSystem();
       await this.tailcat.restart();
       return this.snapshot();
     });
@@ -119,9 +136,52 @@ export class RemoteAccess {
     });
   }
 
+  /**
+   * Install the plugin-managed tailcat, then restore the previous desired
+   * tunnel state. A pre-existing user-installed tailcat is never modified.
+   * @param {{force?: boolean}} [options] - reinstall even when a managed copy exists.
+   */
+  installTailcat(options = {}) {
+    return this.enqueue(async () => {
+      if (this.config.binaryPath !== 'tailcat') {
+        throw new RemoteAccessError(
+          'tailcat-binary-overridden',
+          `binaryPath is set to "${this.config.binaryPath}", so the managed install would not be used. Set binaryPath back to "tailcat" or install there manually.`,
+          409,
+        );
+      }
+      const wasDesired = this.tailcat.desired || Boolean(this.tailcat.handle);
+      if (this.tailcat.handle) await this.tailcat.stop();
+      try {
+        await this.installer.install({ force: options.force === true });
+      } catch (error) {
+        if (wasDesired) {
+          try {
+            await this.ensureDoor();
+            await this.tailcat.start();
+          } catch (restartError) {
+            this.logger.warn(`tailcat-remote: could not restart the previous tailcat: ${errorMessage(restartError)}`);
+          }
+        }
+        throw error;
+      }
+      this.tailcat.reloadBinary();
+      if (wasDesired) {
+        try {
+          await this.ensureDoor();
+          await this.tailcat.start();
+        } catch (error) {
+          this.logger.warn(`tailcat-remote: installed tailcat but could not start it: ${errorMessage(error)}`);
+        }
+      }
+      return this.snapshot();
+    });
+  }
+
   /** Stop both halves and release the plugin's resources. */
   async dispose() {
     this.disposed = true;
+    this.installer.dispose();
     try {
       await this.ops;
     } catch {
@@ -158,6 +218,7 @@ export class RemoteAccess {
       config: configView(this.config),
       door: this.door.snapshot(),
       tailcat,
+      installer: this.installer.snapshot(),
       devices: this.devices.snapshot(),
       pairing,
       safety: {

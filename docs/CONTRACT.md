@@ -15,7 +15,7 @@
 ```json
 {
   "ok": true,
-  "plugin": { "name": "@ds-hu/dsh-tailcat-remote", "version": "0.1.0" },
+  "plugin": { "name": "@ds-hu/dsh-tailcat-remote", "version": "0.1.1" },
   "now": "2026-11-24T16:22:50.998Z",
   "web": { "protocol": "http:", "port": 3080 },
   "config": {
@@ -52,7 +52,7 @@
     "listen": "socket",
     "endpoint": { "mode": "socket", "socketPath": "/home/you/.dsh/tailcat-remote.sock" },
     "region": { "id": 304, "name": "Tokyo" },
-    "binary": { "requested": "tailcat", "resolved": "/usr/local/bin/tailcat", "version": "v0.8.0", "error": null },
+    "binary": { "requested": "tailcat", "resolved": "/usr/local/bin/tailcat", "source": "path", "version": "v0.8.0", "error": null },
     "restarts": 0,
     "lastError": null,
     "lastExit": null,
@@ -74,6 +74,31 @@
     "startedAt": "2026-11-24T16:22:00.000Z",
     "onlineAt": "2026-11-24T16:22:02.000Z",
     "nextRestartAt": null
+  },
+  "installer": {
+    "supported": true,
+    "method": "archive",
+    "platform": "linux",
+    "arch": "x64",
+    "version": "0.8.0",
+    "installed": false,
+    "installedVersion": null,
+    "installedAt": null,
+    "source": null,
+    "binaryPath": "/home/you/.dsh/tailcat-remote/bin/tailcat",
+    "asset": "tailcat_0.8.0_linux_amd64.tar.gz",
+    "command": null,
+    "manualUrl": "https://github.com/tailscale/tailcat#install",
+    "busy": false,
+    "phase": "idle",
+    "progress": null,
+    "error": null,
+    "system": {
+      "status": "found",
+      "path": "/usr/local/bin/tailcat",
+      "version": "v0.8.0",
+      "checkedAt": "2026-11-24T16:22:01.000Z"
+    }
   },
   "devices": {
     "allow": [],
@@ -98,6 +123,16 @@
 
 `tailcat.phase` 的取值：`stopped`、`starting`、`online`、`stopping`、`restarting`、`error`。
 
+`tailcat.binary.source` 的取值：`managed`（受管安装）、`path`（PATH 或常见安装位置）、`config`（显式 `binaryPath`）。
+
+`installer` 是安装器的只读状态：
+
+- `system.status`：`checking`、`found`、`missing`。`found` 表示用户已经装了 tailcat，插件会直接使用；
+- `supported` / `method`：当前平台是否能自动安装，`archive` 或 `brew`；
+- `phase`：`idle`、`starting`、`checksums`、`downloading`、`verifying`、`extracting`、`installing`、`homebrew`、`done`、`error`；
+- `progress`：下载时的 `{ phase, received, total, percent }`，其余阶段为 `null`；
+- `installed` 表示受管目录里已有可执行文件，不代表系统检测结果。
+
 ## POST
 
 请求体必须包含 `action`。动作串行执行；`start` 会先确保 door 可用。
@@ -109,11 +144,13 @@
 | `restart` | — | 停掉再用当前配置启动；地址通常不变 | 新进程、`restarts` 递增 |
 | `rotate` | — | 覆盖保存密钥、重启、等新地址上线 | `tailcat.address` 改变，旧地址失效 |
 | `devices` | `allow: string[]` | 规范化并持久化白名单；运行中的 tailcat 会重启以应用 | `devices.enforced` / `count` 更新 |
+| `install` | `force?: boolean` | 安装受管 tailcat。默认会跳过已有受管副本；`force` 强制重新安装。隧道若在运行会短暂停止，成功后按原状态恢复 | `installer.*` 与 `tailcat.binary.source` 更新 |
 
 示例：
 
 ```json
 { "action": "devices", "allow": ["nodekey:…64 hex…"] }
+{ "action": "install", "force": true }
 ```
 
 `allow: []` 表示仅凭地址访问；非空数组会变成 `tailcat serve --allow=…`。
@@ -131,11 +168,15 @@
 | 409 | `door-tls-unsupported` | Web listener 是 HTTPS |
 | 413 | `body-too-large` | 请求体超过 64 KiB |
 | 500 | `internal` | 未预期错误 |
+| 400 | `tailcat-platform-unsupported` | 当前 OS/架构没有自动安装目标 |
+| 409 | `tailcat-binary-overridden` | `binaryPath` 是显式路径，受管安装不会生效 |
+| 502 | `tailcat-download-failed` / `tailcat-checksum-*` / `tailcat-archive-invalid` | 下载、校验或解压失败 |
 | 503 | `tailcat-not-found` / `tailcat-spawn-failed` | tailcat 找不到或无法启动 |
+| 503 | `tailcat-brew-missing` / `tailcat-extract-unavailable` | macOS 没有 Homebrew，或系统没有解压能力 |
 | 503 | `door-listen-failed` / `door-socket-missing` | door 未监听或 socket 丢失 |
 | 503 | `disposed` | 插件正在卸载 |
 
-`tailcat-not-found` 的 message 会包含 `binaryPath` 与底层解析错误；面板用 `tailcat.binary.resolved === null && tailcat.phase === "error"` 识别安装提示。
+`tailcat-not-found` 的 message 会包含 `binaryPath` 与底层解析错误；面板用 `tailcat.binary.resolved === null && tailcat.phase === "error"` 识别安装提示。面板只在 `installer.system.status !== "found"` 且 `installer.supported` 为真时显示安装按钮；检测到系统 tailcat 时不会再诱导用户下载。
 
 ## 兼容性
 

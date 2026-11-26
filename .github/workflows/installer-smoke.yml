@@ -1,0 +1,30 @@
+name: Installer smoke
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'src/installer.js'
+      - 'src/paths.js'
+      - 'scripts/ci/installer-smoke.mjs'
+      - '.github/workflows/installer-smoke.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  install:
+    name: tailcat install on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install, verify, and run tailcat
+        run: node scripts/ci/installer-smoke.mjs

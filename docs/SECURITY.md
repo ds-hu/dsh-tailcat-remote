@@ -57,6 +57,19 @@ tailcat genkey --client --key=client-default
 
 只做第 1 步不足以让已拿到 cookie 的攻击者下线。
 
+## 受管安装的信任边界
+
+“一键安装”不是静默更新，也不是把第三方二进制塞进 npm 包。它的信任链如下：
+
+- **只在用户点击时联网。** 插件没有 postinstall 脚本，不会在后台下载；安装动作必须在面板点击，或在已认证的 owner API 上显式调用 `install`。
+- **Linux / Windows：** 从 `https://github.com/tailscale/tailcat/releases/tag/v0.8.0` 下载与当前 `process.platform`/`process.arch` 对应的官方资产，并从同一个 release 读取 `checksums.txt`。下载完成后先校验 SHA-256，校验不通过就删除临时文件并保留旧版本。HTTPS 保护传输，校验值保护下载完整性；如果上游 release 本身被攻破，校验值也会一起被改，插件无法提供超过上游的保证。
+- **macOS：** 通过 Homebrew 安装 `tailcat` formula，信任 Homebrew 的 formula、bottle 或源码构建链。没有 Homebrew 时不会尝试其他来源，而是提示手动安装。
+- **用户已有的 tailcat：** 启动时只读取和探测 `PATH`、Homebrew 前缀等常见位置，不移动、不覆盖、不升级。检测到系统版本时，面板不再显示下载按钮。
+- **写入位置：** 受管可执行文件固定在 `$DSH_HOME/tailcat-remote/bin/tailcat`（Windows 为 `tailcat.exe`），模式 0755；临时下载目录权限 0700；元数据 `tailcat.json` 权限 0600；替换采用同目录备份 + 原子 rename。系统 `PATH` 不会被修改，也不会向系统目录写入任何文件。
+- **执行权限：** 受管 tailcat 与 Host 使用同一个 OS 用户运行，因此拥有该用户的权限。不要把 `binaryPath` 指向可被其他用户写入的路径。
+
+受管安装的 tailcat 遵循上游 BSD-3-Clause 许可，归属见 [NOTICE](../NOTICE)。
+
 ## 已知限制
 
 - **Door 只支持明文 HTTP 的 Web listener。** 如果 DSH 配置了 TLS，插件拒绝启动 door（`door-tls-unsupported`）。原因是没有可重放的 `Set-Cookie` 语义：远程客户端看到的是 `http://127.0.0.1:18080`，把 `Secure` cookie 直接搬过去会失效。要在 TLS 场景使用，应让 tailcat 映射到一个明确终止 TLS 的反向代理，并单独评估 cookie 属性；当前版本不提供这个模式。
@@ -72,7 +85,7 @@ tailcat genkey --client --key=client-default
 2. 在分享地址前添加至少一个设备公钥；面板的红色警告消失后再继续。
 3. 用 `stable` 地址模式；需要轮换时用面板按钮，不要手改密钥文件。
 4. 不要把地址、二维码或带 `nodekey:` 的日志贴到公开 issue；需要贴日志时先脱敏。
-5. 只从官方发行版或可信包管理器安装 tailcat。
+5. 优先使用面板的受管安装，或只从官方发行版/可信包管理器安装 tailcat；安装后在诊断区核对来源、版本和路径。
 6. 在不再需要远程访问时，在面板停止隧道，或停用插件。
 
 ## 报告问题
