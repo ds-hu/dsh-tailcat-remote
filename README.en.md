@@ -71,6 +71,10 @@ Restart `dsh web` and open **Remote Access**. If the Host has no tailcat, the pa
 - **Your own tailcat:** on startup the plugin checks `PATH` and common package locations (`/opt/homebrew/bin`, `/usr/local/bin`, `/usr/bin`, and so on). It uses an existing install directly and never downloads over it. The diagnostics section shows the executable's source and version.
 - **Other platforms or architectures:** install tailcat manually (0.8.0 or newer) from [the upstream instructions](https://github.com/tailscale/tailcat#install), then point `binaryPath` at it. `binaryPath` takes precedence over the managed copy.
 
+<p align="center">
+  <img src="docs/screenshots/03-install.png" alt="Install card shown when tailcat is missing: detection, method, checksum note, and the one-click button" width="820">
+</p>
+
 The managed install only runs after you click the button: there is no background download and no per-platform binary payload in the npm package.
 
 > Automatic installation covers the **Host-side** tailcat server only. The client device still needs its own tailcat to run `tailcat forward`; this plugin does not include a client program.
