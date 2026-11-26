@@ -93,6 +93,10 @@ dsh plugin --profile web add @ds-hu/dsh-tailcat-remote
      用 npm 全局安装的 `dsh` 会拒绝 `--profile desktop`；桌面版自带的 `dsh` 命令（如果在应用里安装过）允许这个 profile，但它只做 pnpm 安装，**不会**把包写进 `dsh.profile.bundles`，所以手动路径要自己补上这一项。
 3. 侧边栏打开 **远程访问**，按下面的步骤安装 tailcat、出示地址；客户端 `tailcat forward` 后即可访问。
 
+<p align="center">
+  <img src="docs/screenshots/04-desktop.png" alt="桌面版面板：标题旁的「桌面版」徽标与托盘说明，以及通过 tailcat 隧道访问时的配对卡片" width="820">
+</p>
+
 **桌面版使用须知**
 
 - **关闭窗口不等于退出。** Windows 上关闭窗口后应用继续在系统托盘运行，远程访问保持可用；从托盘退出应用才会结束 Host，隧道随之断开。

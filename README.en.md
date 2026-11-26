@@ -93,6 +93,10 @@ The desktop application runs a profile named `desktop` (`$DSH_HOME/profiles/desk
      An npm-installed `dsh` refuses `--profile desktop`. The command the desktop application can install accepts that profile, but it only runs pnpm: it does **not** add the package to `dsh.profile.bundles`, so the manual path has to add that entry itself.
 3. Open **Remote Access** in the sidebar, install tailcat and show the address as below, then run `tailcat forward` on the client.
 
+<p align="center">
+  <img src="docs/screenshots/04-desktop.png" alt="The panel on the desktop profile: the Desktop badge and tray note beside the title, with the pairing card served over the tailcat tunnel" width="820">
+</p>
+
 **Desktop notes**
 
 - **Closing the window is not quitting.** On Windows the application keeps running in the system tray, so remote access stays up. Quitting from the tray ends the Host and the tunnel.
