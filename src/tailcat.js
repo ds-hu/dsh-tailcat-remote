@@ -294,7 +294,7 @@ export class TailcatSupervisor {
     if (requested === 'tailcat' && this.installer?.system?.compatible === false) {
       throw new RemoteAccessError(
         'tailcat-version-too-old',
-        `The installed tailcat ${this.installer.system.version ?? ''} is too old for the Unix-socket door; install the managed version from Remote Access or upgrade tailcat to 0.8.0 or newer.`,
+        `The installed tailcat ${this.installer.system.version ?? ''} is too old for remote access; install the managed version from Remote Access or upgrade tailcat to 0.8.0 or newer.`,
         503,
       );
     }
@@ -686,6 +686,7 @@ function childEnv() {
     'SYSTEMROOT',
     'TEMP',
     'TMP',
+    'TMPDIR',
     'XDG_CONFIG_HOME',
     'XDG_CACHE_HOME',
     'XDG_DATA_HOME',

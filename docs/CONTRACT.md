@@ -129,7 +129,7 @@
 `installer` 是安装器的只读状态：
 
 - `system.status`：`checking`、`found`、`missing`。`found` 表示用户已经装了 tailcat，插件会直接使用；
-- `system.compatible`：`true`/`false`/`null`。`false` 表示检测到的版本低于 0.8.0（没有 Unix-socket serve），面板会改为提供受管安装；
+- `system.compatible`：`true`/`false`/`null`。`false` 表示检测到的版本低于 0.8.0（缺少 Unix-socket serve / `--log` 等本插件依赖的能力），面板会改为提供受管安装；
 - `supported` / `method`：当前平台是否能自动安装，`archive` 或 `brew`；
 - `phase`：`idle`、`starting`、`checksums`、`downloading`、`verifying`、`extracting`、`installing`、`homebrew`、`done`、`error`；
 - `progress`：下载时的 `{ phase, received, total, percent }`，其余阶段为 `null`；
@@ -175,7 +175,7 @@
 | 502 | `tailcat-download-failed` / `tailcat-checksum-*` / `tailcat-archive-invalid` | 下载、校验或解压失败 |
 | 503 | `tailcat-not-found` / `tailcat-spawn-failed` | tailcat 找不到或无法启动 |
 | 503 | `tailcat-brew-missing` / `tailcat-extract-unavailable` | macOS 没有 Homebrew，或系统没有解压能力 |
-| 503 | `tailcat-version-too-old` | 检测到/安装到的 tailcat 低于 0.8.0，无法映射 Unix-socket door |
+| 503 | `tailcat-version-too-old` | 检测到/安装到的 tailcat 低于 0.8.0，缺少本插件依赖的能力 |
 | 503 | `door-listen-failed` / `door-socket-missing` | door 未监听或 socket 丢失 |
 | 503 | `disposed` | 插件正在卸载 |
 

@@ -12,8 +12,9 @@
 # Host root realm instead of an `isolate` group.
 #
 # Every field below is optional. Defaults are chosen for the common case
-# (Unix-socket door, saved stable key, allow-list off). Uncomment a field only
-# when the machine needs a different placement.
+# (Unix-socket door on Linux/macOS, loopback TCP on Windows; saved stable key;
+# allow-list off). Uncomment a field only when the machine needs a different
+# placement.
 #
 #   - insert:
 #       - id: dsh-tailcat-remote
@@ -21,7 +22,7 @@
 #         config:
 #           binaryPath: tailcat          # PATH name or absolute path
 #           port: 13080                  # virtual port inside tailcat
-#           listen: socket               # socket | tcp
+#           listen: socket               # socket | tcp; Windows defaults to tcp
 #           socketPath: ''               # empty = $DSH_HOME/tailcat-remote.sock
 #           keyName: dsh-tailcat         # saved tailcat key name (or path)
 #           addressMode: stable          # stable | ephemeral

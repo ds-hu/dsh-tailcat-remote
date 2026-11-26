@@ -111,6 +111,7 @@ export class RemoteAccess {
   rotateAddress() {
     return this.enqueue(async () => {
       await this.ensureDoor();
+      await this.installer.detectSystem();
       await this.tailcat.rotate();
       return this.snapshot();
     });
@@ -127,6 +128,7 @@ export class RemoteAccess {
       this.devices.replace(allow);
       if (this.tailcat.desired || this.tailcat.handle) {
         try {
+          await this.installer.detectSystem();
           await this.tailcat.restart();
         } catch (error) {
           this.logger.warn(`tailcat-remote: allow-list saved but tailcat did not restart: ${errorMessage(error)}`);
@@ -150,6 +152,7 @@ export class RemoteAccess {
           409,
         );
       }
+      await this.installer.detectSystem();
       const wasDesired = this.tailcat.desired || Boolean(this.tailcat.handle);
       if (this.tailcat.handle) await this.tailcat.stop();
       try {

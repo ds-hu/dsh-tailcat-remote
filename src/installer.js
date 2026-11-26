@@ -13,7 +13,7 @@ export const TAILCAT_VERSION = '0.8.0';
 export const TAILCAT_TAG = 'v0.8.0';
 export const UPSTREAM_RELEASES = `https://github.com/tailscale/tailcat/releases/download/${TAILCAT_TAG}`;
 export const MANUAL_INSTALL_URL = 'https://github.com/tailscale/tailcat#install';
-/** Minimum tailcat release: Unix-socket serve targets arrived in 0.8.0. */
+/** Minimum tailcat release: Unix-socket serve targets and --log arrived in 0.8.0. */
 export const MIN_TAILCAT_VERSION = '0.8.0';
 
 const MAX_ARCHIVE_BYTES = 64 * 1024 * 1024;
@@ -646,7 +646,7 @@ export class TailcatInstaller {
     if (version && !versionAtLeast(version, MIN_TAILCAT_VERSION)) {
       throw new RemoteAccessError(
         'tailcat-version-too-old',
-        `tailcat ${version} is too old for the Unix-socket door; ${MIN_TAILCAT_VERSION} or newer is required. Update tailcat and retry.`,
+        `tailcat ${version} is too old for this plugin; ${MIN_TAILCAT_VERSION} or newer is required. Update tailcat and retry.`,
         503,
       );
     }
@@ -755,6 +755,7 @@ function baseEnv() {
     'SYSTEMROOT',
     'TEMP',
     'TMP',
+    'TMPDIR',
     'XDG_CONFIG_HOME',
     'XDG_CACHE_HOME',
     'XDG_DATA_HOME',
