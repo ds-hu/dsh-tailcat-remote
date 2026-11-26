@@ -392,7 +392,6 @@ export class TailcatInstaller {
     await this.runCommand([brew, 'install', 'tailcat'], {
       timeoutMs: BREW_TIMEOUT_MS,
       env: {
-        HOMEBREW_NO_AUTO_UPDATE: '1',
         HOMEBREW_NO_INSTALL_CLEANUP: '1',
         NONINTERACTIVE: '1',
       },
@@ -400,7 +399,6 @@ export class TailcatInstaller {
     });
     const prefix = await this.runCommand([brew, '--prefix', 'tailcat'], {
       timeoutMs: COMMAND_TIMEOUT_MS,
-      env: { HOMEBREW_NO_AUTO_UPDATE: '1' },
       signal,
     }).catch(() => null);
     const candidates = [
