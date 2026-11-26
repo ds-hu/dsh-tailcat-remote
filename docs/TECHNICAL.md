@@ -29,6 +29,28 @@ Host 插件
 
 Linux/macOS 默认不把 13080 开在 TCP 上。TCP `127.0.0.1` 仍对同机所有进程可见，Unix socket 的 0600 权限更小；tailcat 能在同机直接连 socket，不需要 TCP。Windows 上 tailcat 没有 Unix-socket 目标支持，因此默认改用回环 TCP；两端都只绑定 `127.0.0.1`。
 
+## 两个 profile：web 与 desktop
+
+同一份插件跑在两类 Host 上，差别只在 Host 怎么启动，不在传输层：
+
+| | `dsh web`（web profile） | 桌面应用（desktop profile） |
+| --- | --- | --- |
+| profile 目录 | `$DSH_HOME/profiles/web` | `$DSH_HOME/profiles/desktop` |
+| bundle | `dsh-base` + `dsh-web-app` | 同左（桌面应用自己初始化） |
+| 启动方式 | `dsh web` | `runProfile({ profile: 'desktop', args: ['--no-open', '--host', '127.0.0.1', '--port', '0'] })` |
+| Web 监听端口 | 默认 3080 | **系统分配的随机端口** |
+| 谁来打开页面 | 本机浏览器 | Electron 窗口；远程浏览器则走 door |
+
+**端口不是插件的事。** door 的转发目标来自 `ctx.webServer.port`，每次请求现取现用（`Door#target()`），启动时只等“端口出现”（`waitForWebPort()`，20 秒上限）。桌面 Host 用 `--port 0` 由系统分配端口，因此重启桌面应用后端口会变，而 door 不需要重启或改配置：下一个请求自然指向新端口。tailcat 侧永远只看到 door 的固定虚拟端口 13080，随机端口被完全藏在 Host 内部。
+
+**运行环境只影响文案。** `src/surface.js` 读一次 `ctx.get('profileContext')?.name`，把它作为 `surface.profile` 放进快照。面板据此显示桌面版徽标、托盘说明和诊断行；door、白名单、cookie 铸造、tailcat argv 都与这个值无关。`profileContext` 不存在时（单测、手搭的 Cordis 树）该字段是 `null`，插件照常工作。
+
+**桌面专属行与本插件无关。** `profileContext.name === 'desktop'` 会打开上游的 desktop 专属行（产品遥测、Browser 侧边栏、账号的 `desktopPlatform`）。它们只是同一棵 Loader 树里的兄弟行；本插件不注入其中任何一个，也不假设它们存在。反过来，客户端插件的 platform 只区分 `web` 与终端之类，桌面版与 web 共用 `web`，所以 `dsh.client.platform: "web"` 在两边都会加载。
+
+**远程浏览器拿到的是普通 Web 页面。** 桌面窗口加载的是打包的 `dsh-app://` 文档，带 Electron 的 `dshDesktopBoot` 注入；远程浏览器请求的是 Host 自己 serve 的 `index.html`，走正常的 `__DSH_BOOT__` 注入路径。两条路径共用同一套客户端插件图和同一套 DSH 登录，所以远程访问不需要第二套前端。
+
+**桌面应用没有为远程访问增加任何东西。** Host 仍然只监听回环地址；door 在 Windows 上仍然是 `127.0.0.1:13080` 的 TCP，在 macOS/Linux 上仍然是 0600 的 Unix socket。差别只在进程生命周期：关闭桌面窗口默认不退出应用，隧道会继续运行；从托盘退出才结束 Host。
+
 ## 一次远程请求的路径
 
 ```mermaid
@@ -163,5 +185,7 @@ DSH 的 Web 客户端按现代 JS 引擎构建，直接调用 `AbortSignal.any`�
 `node --test` 覆盖纯逻辑：地址/日志解析、argv 构造、QR 矩阵、白名单持久化、配置默认值与 manifest，以及安装器的平台矩阵、校验清单解析、系统 tailcat 检测和版本下限。客户端 bundle 也在删掉原生 API 的上下文里加载过一遍：断言补丁先于工厂注册就位、已有实现不被覆盖，并覆盖 `AbortSignal.any` 的语义。
 
 网络行为（真实下载、解压、运行 tailcat、serve 目标）由 `.github/workflows/installer-smoke.yml` 在 Linux、Windows、macOS runner 上执行；它使用真实 GitHub release，并在测试后清理临时目录。普通 CI 在三种 OS 上做 `npm ci`、语法检查、单元测试和 `npm pack --dry-run`，避免每次提交都依赖外部网络；cookie 认领、WebSocket 等完整浏览器路径不在 CI 的 smoke 范围内。
+
+桌面版由 `.github/workflows/desktop-profile.yml` 覆盖。公开 CLI 拒绝 `--profile desktop`，runner 上也没有 Electron，所以工作流直接调用桌面宿主使用的公开入口 `@deepseek-ai/dsh/profile-boot` 的 `runProfile`，参数与 Electron 完全一致（回环地址、`--port 0`、`--no-open`）。profile 用公开命令准备：先用 `--from-default-profile web` 写出与桌面应用相同的两个 bundle，再用 `dsh plugin add` 安装本包，最后把目录改名成 `desktop`。断言全部走网络侧：面板 API 报出 `surface.profile === "desktop"`、`web.port` 等于实际监听端口、`door.target` 指向该端口；door 对 `Host: 127.0.0.1:18080` 铸造 cookie、对陌生 Host 拒绝且不发 cookie；带 cookie 取回的 index 里 `__DSH_BOOT__` 含有本插件条目，该条目的客户端 bundle 可以经 door 取到。Windows 与 macOS 跑关闭隧道的确定性路径，ubuntu 额外挂上 CI 的 tailcat stub、强制 `listen: tcp` 并用 Chromium 从 door（而不是 token URL）打开面板，断言桌面版徽标、托盘说明、遮罩地址与二维码按钮，并产出 `docs/screenshots/04-desktop.png`。
 
 没有构建步骤：包直接发布源码，客户端文件是原生 `React.createElement`，不需要打包。

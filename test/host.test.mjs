@@ -71,6 +71,24 @@ test('the client bundle registers the sidebar entry and the keyed main page', ()
   assert.equal(client.includes('<div'), false, 'the client is plain React.createElement, not JSX');
 });
 
+test('the snapshot carries the running profile as a display-only surface fact', () => {
+  const remote = read('src/remote.js');
+  assert.match(remote, /import \{ surfaceOf \} from '\.\/surface\.js'/);
+  assert.match(remote, /this\.surface = surfaceOf\(ctx\)/);
+  assert.match(remote, /surface: this\.surface/);
+});
+
+test('the panel labels the desktop profile and explains its tray lifetime', () => {
+  const client = read('client.js');
+  assert.match(client, /surfaceDesktop: '桌面版'/);
+  assert.match(client, /surfaceDesktop: 'Desktop'/);
+  assert.match(client, /diagSurface: '运行环境'/);
+  assert.match(client, /diagSurface: 'Runtime'/);
+  assert.match(client, /tcr-title-row/);
+  assert.match(client, /tcr-desktop-hint/);
+  assert.equal(client.includes('dsh web'), false, 'session-expiry copy must not name one profile');
+});
+
 test('the vendored QR generator keeps its MIT notice and exports the generator', () => {
   const vendor = read('vendor/qrcode.mjs');
   assert.match(vendor, /MIT license/);

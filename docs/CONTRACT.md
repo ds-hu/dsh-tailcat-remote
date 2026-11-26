@@ -15,7 +15,8 @@
 ```json
 {
   "ok": true,
-  "plugin": { "name": "@ds-hu/dsh-tailcat-remote", "version": "0.1.3" },
+  "plugin": { "name": "@ds-hu/dsh-tailcat-remote", "version": "0.2.0" },
+  "surface": { "profile": "web" },
   "now": "2026-11-24T16:22:50.998Z",
   "web": { "protocol": "http:", "port": 3080 },
   "config": {
@@ -125,6 +126,14 @@
 `tailcat.phase` 的取值：`stopped`、`starting`、`online`、`stopping`、`restarting`、`error`。
 
 `tailcat.binary.source` 的取值：`managed`（受管安装）、`path`（PATH 或常见安装位置）、`config`（显式 `binaryPath`）。
+
+### `surface`
+
+Host 启动这个插件时所在的 profile，只在面板里用于显示运行环境，不参与任何安全判断。
+
+- `surface.profile`：`profileContext.name`，如 `"web"`、`"desktop"`；Host 不是由 profile 启动器拉起时为 `null`（单测、手搭的 Cordis 树）。
+- 旧 Host 没有这个字段，新面板按“未知”降级；旧面板忽略它。字段只影响文案和诊断行，不影响 door、tailcat 或白名单。
+- 面板对 `"desktop"` 额外显示桌面版徽标和托盘说明；值本身不会被当作权限或能力开关。
 
 `installer` 是安装器的只读状态：
 

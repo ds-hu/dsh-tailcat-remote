@@ -232,6 +232,8 @@ window.__ModuleLoader__.load({
       nav: '远程访问',
       title: '远程访问',
       subtitle: '通过 tailcat 从任意地点访问本 Harness，无需开放公网端口，也无需调整入站防火墙。',
+      surfaceDesktop: '桌面版',
+      surfaceHint: '桌面版：关闭窗口不会中断远程访问（应用继续在系统托盘运行）；退出桌面应用会断开隧道。',
       refresh: '刷新',
       loading: '正在读取远程访问状态…',
       statusLabel: '隧道',
@@ -285,6 +287,7 @@ window.__ModuleLoader__.load({
       devicesGenerate: '在客户端设备生成密钥：',
       diagnosticsTitle: '状态与诊断',
       diagPhase: '状态',
+      diagSurface: '运行环境',
       diagAddressMode: '密钥模式',
       diagKeyName: '密钥名',
       diagVersion: 'tailcat 版本',
@@ -306,7 +309,7 @@ window.__ModuleLoader__.load({
       retry: '重试',
       unavailableTitle: '远程访问不可用',
       unavailableBody: '插件无法读取控制接口。请刷新页面或查看 Host 日志。',
-      sessionExpired: '浏览器会话已过期，请重新打开 dsh web 输出的地址。',
+      sessionExpired: '浏览器会话已过期，请重新打开这次会话的入口地址。',
       setupTitle: '安装 tailcat',
       setupBody: '插件找不到 tailcat 可执行文件。可以一键安装，也可以使用系统已有的 tailcat。',
       setupRetry: '重新检测',
@@ -364,6 +367,8 @@ window.__ModuleLoader__.load({
       nav: 'Remote Access',
       title: 'Remote Access',
       subtitle: 'Reach this Harness from anywhere through tailcat — no public port and no inbound firewall change.',
+      surfaceDesktop: 'Desktop',
+      surfaceHint: 'Desktop: closing the window keeps remote access alive (the app stays in the system tray); quitting the desktop app ends the tunnel.',
       refresh: 'Refresh',
       loading: 'Reading remote-access state…',
       statusLabel: 'Tunnel',
@@ -417,6 +422,7 @@ window.__ModuleLoader__.load({
       devicesGenerate: 'Generate a client key on the client device:',
       diagnosticsTitle: 'Status & diagnostics',
       diagPhase: 'Phase',
+      diagSurface: 'Runtime',
       diagAddressMode: 'Key mode',
       diagKeyName: 'Key name',
       diagVersion: 'tailcat version',
@@ -438,7 +444,7 @@ window.__ModuleLoader__.load({
       retry: 'Retry',
       unavailableTitle: 'Remote access is unavailable',
       unavailableBody: 'The plugin could not read its control API. Reload the page or check the Host log.',
-      sessionExpired: 'The browser session expired; reopen the URL printed by dsh web.',
+      sessionExpired: 'The browser session expired; reopen this session’s entry URL.',
       setupTitle: 'Install tailcat',
       setupBody: 'The plugin could not find the tailcat executable. Install it here or use an existing system copy.',
       setupRetry: 'Check again',
@@ -512,6 +518,7 @@ window.__ModuleLoader__.load({
       .tcr-heading { display: flex; align-items: flex-start; gap: 14px; min-width: 0; }
       .tcr-mark { flex: 0 0 auto; width: 42px; height: 42px; border-radius: 12px; background: var(--dsw-alias-bg-layer-2); border: 1px solid var(--dsw-alias-border-l3); display: grid; place-items: center; color: var(--dsw-alias-brand-primary); }
       .tcr-title { margin: 0; font-size: 22px; line-height: 1.25; font-weight: 600; letter-spacing: -0.01em; }
+      .tcr-title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
       .tcr-subtitle { margin: 5px 0 0; font-size: 13px; line-height: 1.55; color: var(--dsw-alias-label-secondary); max-width: 620px; }
       .tcr-header-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
       .tcr-card { background: var(--dsw-alias-bg-layer-1); border: 1px solid var(--dsw-alias-border-l3); border-radius: 14px; padding: 18px 20px; }
@@ -838,6 +845,13 @@ window.__ModuleLoader__.load({
 
       const tailcat = snapshot?.tailcat;
       const phase = tailcat?.phase ?? 'stopped';
+      const desktop = snapshot?.surface?.profile === 'desktop';
+      const surfaceLabel =
+        snapshot?.surface?.profile === 'desktop'
+          ? t('surfaceDesktop')
+          : snapshot?.surface?.profile === 'web'
+            ? 'Web'
+            : snapshot?.surface?.profile ?? t('unknown');
       const pairing = snapshot?.pairing ?? null;
       const busyKey =
         busy === 'start'
@@ -967,7 +981,12 @@ window.__ModuleLoader__.load({
               h(
                 'div',
                 null,
-                h('h1', { className: 'tcr-title' }, t('title')),
+                h(
+                  'div',
+                  { className: 'tcr-title-row' },
+                  h('h1', { className: 'tcr-title' }, t('title')),
+                  desktop ? h('span', { className: 'tcr-badge tcr-surface-badge' }, t('surfaceDesktop')) : null,
+                ),
                 h('p', { className: 'tcr-subtitle' }, t('subtitle')),
               ),
             ),
@@ -1001,6 +1020,8 @@ window.__ModuleLoader__.load({
               h(Button, { variant: 'ghost', disabled: anyBusy, onClick: () => void reload() }, t('refresh')),
             ),
           ),
+
+          desktop ? h('p', { className: 'tcr-hint tcr-desktop-hint', style: { marginTop: 0 } }, t('surfaceHint')) : null,
 
           displayedNotice
             ? h(
@@ -1222,6 +1243,7 @@ window.__ModuleLoader__.load({
             h(
               'div',
               { className: 'tcr-grid' },
+              h(Row, { label: t('diagSurface') }, surfaceLabel),
               h(Row, { label: t('diagPhase') }, t(PHASE_KEY[phase] ?? 'statusUnknown')),
               h(Row, { label: t('diagAddressMode') }, tailcat.addressMode === 'ephemeral' ? t('modeEphemeral') : t('modeStable')),
               h(Row, { label: t('diagKeyName') }, h('span', { className: 'tcr-mono' }, tailcat.keyName)),

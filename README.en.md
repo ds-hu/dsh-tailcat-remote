@@ -11,6 +11,7 @@
 <p align="center">
   <a href="https://www.npmjs.com/package/@ds-hu/dsh-tailcat-remote"><img alt="npm" src="https://img.shields.io/npm/v/@ds-hu/dsh-tailcat-remote?color=0F766E"></a>
   <a href="https://github.com/ds-hu/dsh-tailcat-remote/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/ds-hu/dsh-tailcat-remote/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/ds-hu/dsh-tailcat-remote/actions/workflows/desktop-profile.yml"><img alt="Desktop profile" src="https://github.com/ds-hu/dsh-tailcat-remote/actions/workflows/desktop-profile.yml/badge.svg"></a>
   <a href="LICENSE"><img alt="license" src="https://img.shields.io/badge/license-MIT-0F766E"></a>
   <a href="README.md">中文</a>
 </p>
@@ -21,7 +22,7 @@
 
 DeepSeek Harness listens on the local machine by default. Opening the same GUI from a laptop, phone, or another computer usually means a public port, port forwarding, or a reverse proxy.
 
-Remote Access folds that into one plugin. The Host supervises a `tailcat` process and a tailnet-only local door. The client needs a tailcat address and one command.
+Remote Access folds that into one plugin. The Host supervises a `tailcat` process and a tailnet-only local door. The client needs a tailcat address and one command. The same package serves the **web profile** of `dsh web` and the **desktop profile** of the Electron application.
 
 <p align="center">
   <img src="docs/screenshots/01-pairing.png" alt="Remote Access page: a running tunnel, a masked tailcat address, a prominent Show QR code button, and the local URL" width="820">
@@ -63,6 +64,46 @@ List the package in the profile's `dsh.profile.bundles`, then restart `dsh web`:
 
 Installing the bundle from **Plugin Manager** has the same effect.
 
+### The desktop application
+
+The desktop application runs a profile named `desktop` (`$DSH_HOME/profiles/desktop`) composed from the same Web bundles. Its Host listens on an OS-assigned **random port** on `127.0.0.1`; the plugin reads that port at runtime, so **no port configuration is needed**.
+
+1. Open the desktop application once so it initializes the `desktop` profile, then **quit it completely** (on Windows, quit from the tray icon).
+2. Install the plugin into the desktop profile, one of:
+   - **Recommended:** install `@ds-hu/dsh-tailcat-remote` by package name from the application's **Plugin Manager**. The application runs pnpm, records the package in `dsh.profile.bundles`, and applies it after the restart it prompts for.
+   - **Manual:** edit `%USERPROFILE%\.dsh\profiles\desktop\package.json` and add the package to both `dependencies` and `dsh.profile.bundles`:
+
+     ```json
+     {
+       "dependencies": { "@ds-hu/dsh-tailcat-remote": "^0.2.0" },
+       "dsh": {
+         "profile": {
+           "bundles": [
+             "@deepseek-ai/dsh-base",
+             "@deepseek-ai/dsh-web-app",
+             "@ds-hu/dsh-tailcat-remote"
+           ]
+         }
+       }
+     }
+     ```
+
+     Then run `pnpm install` inside `%USERPROFILE%\.dsh\profiles\desktop` and start the application again.
+
+     An npm-installed `dsh` refuses `--profile desktop`. The command the desktop application can install accepts that profile, but it only runs pnpm: it does **not** add the package to `dsh.profile.bundles`, so the manual path has to add that entry itself.
+3. Open **Remote Access** in the sidebar, install tailcat and show the address as below, then run `tailcat forward` on the client.
+
+<p align="center">
+  <img src="docs/screenshots/04-desktop.png" alt="The panel on the desktop profile: the Desktop badge and tray note beside the title, with the pairing card served over the tailcat tunnel" width="820">
+</p>
+
+**Desktop notes**
+
+- **Closing the window is not quitting.** On Windows the application keeps running in the system tray, so remote access stays up. Quitting from the tray ends the Host and the tunnel.
+- **The address survives upgrades.** A desktop update restarts the Host and briefly interrupts the tunnel; the saved tailcat key does not change, so the same address reconnects.
+- **A remote visitor gets the ordinary Web GUI.** Desktop-only surfaces (the Browser sidebar tabs, native file dialogs, platform sign-in) exist only inside the desktop window.
+- **This is not multi-user isolation.** The desktop window and every remote browser share one Host, one credential store, and one agent session. Share the address only with people you trust.
+
 ### tailcat installation is managed
 
 Restart `dsh web` and open **Remote Access**. If the Host has no tailcat, the page shows an install card:
@@ -101,6 +142,7 @@ The tailcat address is a credential. In address-only mode, anyone who has it can
 - Rotating the address invalidates the old one immediately. Browsers that already hold a DSH cookie are not signed out; use DSH's session management for that.
 - Do not expose port 3080 directly. The plugin lets tailcat reach a single 0600 Unix-socket door and opens no public listener.
 - If the Web listener uses HTTPS, the door refuses to start; this version does not replay cookies behind TLS.
+- The desktop application adds no network exposure: its Host still listens on a random loopback port, and on Windows the door still binds only `127.0.0.1:13080`. It usually stays in the tray, though, so the tunnel is on by default; quitting from the tray removes that path.
 
 The full threat model, limitations, and checklist are in [Security](docs/SECURITY.md).
 
