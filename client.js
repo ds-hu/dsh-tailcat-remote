@@ -1,3 +1,223 @@
+// --- WebView compatibility shim -------------------------------------------
+//
+// The Harness WebUI runs on engines that already ship the ES2023/ES2024 APIs its
+// client calls. HarmonyOS and older Android WebViews do not, and DSH has no
+// fallback: the connection never leaves "Reconnecting" (AbortSignal.any), the
+// settings Models page stays blank (Promise.withResolvers), any message holding
+// a markdown link or image throws in the shell's renderer (URL.canParse), and
+// PDF preview fails in the pdf.js chunk (Promise.try, URL.parse). This plugin is
+// what makes a phone reach the WebUI, and its bundle is registered before any
+// plugin applies, so the missing APIs are restored here.
+//
+// The list is not a version table: each entry has a call site in the shipped
+// client bundles. When DSH starts calling another API, add it here and bump
+// REVISION (below), which is what makes an already-loaded page re-run the shim.
+//
+// Rules: ES5 syntax only (this must parse on the engines it repairs),
+// feature-detect instead of sniffing the version, never replace a native
+// implementation, never throw into the page.
+(function () {
+  'use strict';
+
+  var scope = typeof globalThis !== 'undefined' ? globalThis : null;
+  if (!scope) return;
+
+  // Bumped whenever the installed API set changes. A page that already ran an
+  // older copy — the harness swaps a bundle in place on a rebuild, re-executing
+  // this file without a document reload — must run this one, or the APIs added
+  // since never arrive until a hard reload.
+  var REVISION = 2;
+  var previous = scope.__cuplivoHarnessCompat;
+  if (previous && previous.revision >= REVISION) return;
+
+  var REQUIRED = [
+    'AbortSignal.any',
+    'Promise.withResolvers',
+    'Promise.try',
+    'Array.prototype.toSorted',
+    'URL.canParse',
+    'URL.parse',
+  ];
+
+  var report = {
+    revision: REVISION,
+    installed: [],
+    present: [],
+    failed: [],
+    missing: [],
+    userAgent: '',
+  };
+
+  try {
+    report.userAgent = String((scope.navigator && scope.navigator.userAgent) || '');
+  } catch (error) {
+    report.userAgent = '';
+  }
+
+  function describe(error) {
+    return error && error.message ? String(error.message) : String(error);
+  }
+
+  function resolve(path) {
+    var current = scope;
+    var parts = path.split('.');
+    for (var i = 0; i < parts.length; i += 1) {
+      if (current === null || current === undefined) return null;
+      current = current[parts[i]];
+    }
+    return current === null || current === undefined ? null : current;
+  }
+
+  function install(path, factory) {
+    var split = path.lastIndexOf('.');
+    var owner = split === -1 ? scope : resolve(path.slice(0, split));
+    var name = split === -1 ? path : path.slice(split + 1);
+    if (owner === null) {
+      report.failed.push(path + ': owner missing');
+      return;
+    }
+    if (typeof owner[name] === 'function') {
+      report.present.push(path);
+      return;
+    }
+    try {
+      Object.defineProperty(owner, name, {
+        configurable: true,
+        enumerable: false,
+        writable: true,
+        value: factory(),
+      });
+      if (typeof owner[name] === 'function') report.installed.push(path);
+      else report.failed.push(path + ': not defined');
+    } catch (error) {
+      report.failed.push(path + ': ' + describe(error));
+    }
+  }
+
+  function anySignal(signals) {
+    var controller = new scope.AbortController();
+    var sources = [];
+    var index;
+    try {
+      for (index = 0; index < signals.length; index += 1) sources.push(signals[index]);
+    } catch (error) {
+      sources = [];
+    }
+
+    var listeners = [];
+    var settled = false;
+
+    function detach() {
+      for (var i = 0; i < listeners.length; i += 1) {
+        try {
+          listeners[i].signal.removeEventListener('abort', listeners[i].handler);
+        } catch (error) {
+          /* A detached source is not an error; keep tearing the rest down. */
+        }
+      }
+      listeners = [];
+    }
+
+    function forward(event) {
+      if (settled) return;
+      settled = true;
+      var source = event && event.target ? event.target : null;
+      detach();
+      controller.abort(source ? source.reason : undefined);
+    }
+
+    for (index = 0; index < sources.length; index += 1) {
+      var early = sources[index];
+      if (!early || typeof early.addEventListener !== 'function') continue;
+      if (early.aborted) {
+        settled = true;
+        controller.abort(early.reason);
+        return controller.signal;
+      }
+    }
+
+    for (index = 0; index < sources.length; index += 1) {
+      var source = sources[index];
+      if (!source || typeof source.addEventListener !== 'function') continue;
+      listeners.push({ signal: source, handler: forward });
+      source.addEventListener('abort', forward);
+    }
+
+    return controller.signal;
+  }
+
+  install('AbortSignal.any', function () {
+    if (typeof scope.AbortController !== 'function') throw new Error('AbortController is missing');
+    return anySignal;
+  });
+  install('Promise.withResolvers', function () {
+    return function withResolvers() {
+      var resolve;
+      var reject;
+      var promise = new scope.Promise(function (res, rej) {
+        resolve = res;
+        reject = rej;
+      });
+      return { promise: promise, resolve: resolve, reject: reject };
+    };
+  });
+  install('Promise.try', function () {
+    return function promiseTry(fn) {
+      var args = scope.Array.prototype.slice.call(arguments, 1);
+      return new scope.Promise(function (resolve) {
+        resolve(fn.apply(undefined, args));
+      });
+    };
+  });
+  install('Array.prototype.toSorted', function () {
+    return function toSorted(compareFn) {
+      var copy = scope.Array.prototype.slice.call(this);
+      copy.sort(compareFn);
+      return copy;
+    };
+  });
+  install('URL.canParse', function () {
+    if (typeof scope.URL !== 'function') throw new Error('URL is missing');
+    return function canParse(url, base) {
+      try {
+        return !!new scope.URL(url, base);
+      } catch (error) {
+        return false;
+      }
+    };
+  });
+  install('URL.parse', function () {
+    if (typeof scope.URL !== 'function') throw new Error('URL is missing');
+    return function parse(url, base) {
+      try {
+        return new scope.URL(url, base);
+      } catch (error) {
+        return null;
+      }
+    };
+  });
+
+  for (var i = 0; i < REQUIRED.length; i += 1) {
+    if (typeof resolve(REQUIRED[i]) !== 'function') report.missing.push(REQUIRED[i]);
+  }
+
+  try {
+    Object.defineProperty(scope, '__cuplivoHarnessCompat', {
+      configurable: true,
+      enumerable: false,
+      writable: false,
+      value: report,
+    });
+  } catch (error) {
+    try {
+      scope.__cuplivoHarnessCompat = report;
+    } catch (ignored) {
+      /* A frozen window is not worth failing the whole bundle over. */
+    }
+  }
+})();
+// --------------------------------------------------------------------------
+
 window.__ModuleLoader__.load({
   id: '@ds-hu/dsh-tailcat-remote',
   factory(require) {
