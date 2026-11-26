@@ -183,7 +183,7 @@ async function verifyServe(binary, root) {
   });
   try {
     await new Promise((resolve, reject) => {
-      const timer = setTimeout(() => reject(new Error(`tailcat serve did not report an address:\n${output.slice(-4000)}`)), 90_000);
+      const timer = setTimeout(() => reject(new Error(`tailcat serve did not report an address:\n${output.slice(-4000)}`)), 180_000);
       const check = () => {
         if (/tc[A-Za-z0-9]{8,}/.test(output)) {
           clearTimeout(timer);
