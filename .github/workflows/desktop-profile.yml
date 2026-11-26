@@ -36,7 +36,7 @@ jobs:
   desktop:
     name: desktop profile on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
@@ -63,13 +63,45 @@ jobs:
 
       - run: npm ci --no-audit --no-fund
 
+      - name: Resolve the npm global root
+        id: npm-root
+        shell: bash
+        # `root` holds the packages, `prefix` also holds the bin shims on
+        # Windows; the cache needs both. Forward slashes keep `dirname` and
+        # the cache action happy on every platform.
+        run: |
+          root="$(npm root -g)"
+          root="${root//\\//}"
+          printf 'root=%s\n' "$root" >> "$GITHUB_OUTPUT"
+          printf 'prefix=%s\n' "$(dirname "$root")" >> "$GITHUB_OUTPUT"
+
+      # Extracting the Harness CLI takes a few seconds on Linux and macOS but
+      # more than ten minutes on Windows, where the on-access scanner walks
+      # every file. Cache that one install for Windows runs; Linux and macOS
+      # keep the plain path.
+      - name: Restore the Harness CLI
+        id: harness-cache
+        if: runner.os == 'Windows'
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ steps.npm-root.outputs.prefix }}
+          key: dsh-cli-${{ runner.os }}-${{ runner.arch }}-node22-0.2.2-rc.5
+
       - name: Install the Harness CLI and pnpm
-        run: npm install -g pnpm@11 @deepseek-ai/dsh@0.2.2-rc.5
+        if: steps.harness-cache.outputs.cache-hit != 'true'
+        run: npm install -g --no-audit --no-fund pnpm@11 @deepseek-ai/dsh@0.2.2-rc.5
+
+      - name: Save the Harness CLI
+        if: always() && runner.os == 'Windows' && steps.harness-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ steps.npm-root.outputs.prefix }}
+          key: dsh-cli-${{ runner.os }}-${{ runner.arch }}-node22-0.2.2-rc.5
 
       - name: Resolve the installed Harness package and a throwaway home
         shell: bash
         run: |
-          install_root="$(npm root -g)/@deepseek-ai/dsh"
+          install_root="${{ steps.npm-root.outputs.root }}/@deepseek-ai/dsh"
           if [ ! -f "$install_root/package.json" ]; then
             echo "the installed Harness package was not found at $install_root" >&2
             exit 1
