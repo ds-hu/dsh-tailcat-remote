@@ -25,7 +25,7 @@ DeepSeek Harness 默认只在本机监听。想从笔记本、手机或另一台
 远程访问把这件事收进一个插件：Host 负责托管 `tailcat` 进程和一条 tailnet-only 的本地门卫，客户端只需要 tailcat 地址和一行命令。同一份插件同时适用 `dsh web` 的 **web profile** 与桌面版（Electron）使用的 **desktop profile**。
 
 <p align="center">
-  <img src="docs/screenshots/01-pairing.png" alt="远程访问页：运行中的隧道、默认遮罩的 tailcat 地址、显眼的显示二维码按钮和本地地址" width="820">
+  <img src="docs/screenshots/01-pairing.png" alt="设置 → 远程访问：本机 Harness 与客户端设备之间的隧道状态、中继区域胶囊、默认遮罩的 tailcat 地址和按需显示的二维码" width="820">
 </p>
 
 ## 能带来什么
@@ -35,12 +35,18 @@ DeepSeek Harness 默认只在本机监听。想从笔记本、手机或另一台
 - **配对页保持精简。** 只保留地址、二维码和本地地址，不再渲染客户端命令与使用步骤；命令示例见下方“使用”。
 - **白名单限制谁能连。** 默认只有地址这一把钥匙；添加客户端公钥后，未授权设备在 tailcat 握手阶段就被拒绝。
 - **地址可换，进程可管。** 在 **设置 → 远程访问** 里启动、停止、重启、轮换地址，查看中继区域、最近连接、拒绝记录和错误信息。
-- **侧边栏入口可关。** 默认在侧边栏的面板列表里留一行快捷入口，点开就是同一个页面；不想要时把插件配置的 `sidebarEntry` 关掉，设置里的入口始终保留，刷新页面生效。
+- **侧边栏入口可关。** 默认在侧边栏的面板列表里留一行快捷入口，点开就是同一个页面；不想要时在 **插件管理** 里把 `sidebarEntry` 关掉，设置里的入口始终保留，刷新页面生效。
 - **登录仍然只有一次。** 第一次打开远程地址会走正常的 DSH 登录流程，之后浏览器沿用 HttpOnly cookie；token 不会出现在远程 URL 里。
 - **本机与远程同一页。** 页面本身通过 DSH 的 owner API 工作，在本机操作和远程操作一致。
 
 <p align="center">
   <img src="docs/screenshots/02-security.png" alt="安全区：地址即钥匙的红色警告、客户端公钥白名单和两步确认的地址轮换" width="820">
+</p>
+
+从侧栏那一行打开时，同一个页面拿到整块画布，诊断网格在宽屏变成两列：
+
+<p align="center">
+  <img src="docs/screenshots/05-panel.png" alt="侧栏入口打开的远程访问页：状态反射线、配对卡片与安全区在更宽的画布上排开" width="820">
 </p>
 
 ## 安装

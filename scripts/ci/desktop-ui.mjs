@@ -69,6 +69,14 @@ try {
   }
   await qrToggle.click();
   await page.locator('.tcr-qr-wrap').first().waitFor({ timeout: 10_000 });
+  // The assertions above scrolled the dialog to reach folded blocks and the QR
+  // code; the screenshot documents the top of the page, so scroll back first.
+  await page.evaluate(() => {
+    const section = document.querySelector('.tcr-section');
+    let node = section?.parentElement;
+    while (node && node.scrollHeight <= node.clientHeight) node = node.parentElement;
+    if (node) node.scrollTop = 0;
+  });
   await page.waitForTimeout(600);
 
   await page.screenshot({ path: path.join(outDir, '04-desktop.png'), fullPage: true });

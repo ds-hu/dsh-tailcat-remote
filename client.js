@@ -538,7 +538,7 @@ window.__ModuleLoader__.load({
       .tcr-wire[data-state="online"] { --wire: var(--dsw-alias-state-success-primary); }
       .tcr-wire[data-state="pending"] { --wire: var(--dsw-alias-state-warn-primary); }
       .tcr-wire[data-state="error"] { --wire: var(--dsw-alias-state-error-primary); }
-      .tcr-wire-label { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; line-height: 1; letter-spacing: .06em; text-transform: uppercase; color: var(--dsw-alias-label-tertiary); white-space: nowrap; }
+      .tcr-wire-label { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; line-height: 1; letter-spacing: .06em; color: var(--dsw-alias-label-tertiary); white-space: nowrap; }
       .tcr-wire-label-end { justify-content: flex-end; }
       .tcr-wire-dot { width: 6px; height: 6px; flex: 0 0 auto; border-radius: 50%; background: var(--wire); }
       .tcr-wire-track { flex: 1 1 24px; height: 1px; min-width: 16px; background: repeating-linear-gradient(90deg, var(--wire) 0 3px, transparent 3px 8px); opacity: .7; }

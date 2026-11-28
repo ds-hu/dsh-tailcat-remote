@@ -25,7 +25,7 @@ DeepSeek Harness listens on the local machine by default. Opening the same GUI f
 Remote Access folds that into one plugin. The Host supervises a `tailcat` process and a tailnet-only local door. The client needs a tailcat address and one command. The same package serves the **web profile** of `dsh web` and the **desktop profile** of the Electron application.
 
 <p align="center">
-  <img src="docs/screenshots/01-pairing.png" alt="Remote Access page: a running tunnel, a masked tailcat address, a prominent Show QR code button, and the local URL" width="820">
+  <img src="docs/screenshots/01-pairing.png" alt="Settings → Remote Access: the tunnel status between this Harness and the client device, relay-region chips, the masked tailcat address, and the opt-in QR code" width="820">
 </p>
 
 ## What you get
@@ -35,12 +35,18 @@ Remote Access folds that into one plugin. The Host supervises a `tailcat` proces
 - **The pairing page stays compact.** It shows the address, QR code, and local URL only; the client command and step list are no longer rendered. See **Use** below for the command example.
 - **A key allow-list.** The address is the only credential by default. Add client public keys and unauthorized devices are refused during the tailcat handshake.
 - **Rotate the address, manage the process.** Start, stop, restart, and rotate in **Settings → Remote Access**; inspect the relay region, recent connections, refusals, and errors.
-- **The sidebar row is optional.** A shortcut row sits in the sidebar panel list by default and opens the same page. Turn `sidebarEntry` off in the plugin config to hide just that row; the Settings entry always stays, and a reload applies the change.
+- **The sidebar row is optional.** A shortcut row sits in the sidebar panel list by default and opens the same page. Turn `sidebarEntry` off in **Plugin management** to hide just that row; the Settings entry always stays, and a reload applies the change.
 - **Log in once.** The first remote visit runs the normal DSH login flow and then keeps an HttpOnly cookie. The token never appears in the remote URL.
 - **The same page locally and remotely.** The panel works through DSH's owner API, so both views behave alike.
 
 <p align="center">
   <img src="docs/screenshots/02-security.png" alt="Security section: the red address-is-the-key warning, client public-key allow-list, and two-step address rotation" width="820">
+</p>
+
+Opened from its sidebar row, the same page gets the whole canvas and the diagnostics grid widens to two columns:
+
+<p align="center">
+  <img src="docs/screenshots/05-panel.png" alt="The page opened from its sidebar row: the status wire, pairing card, and security section laid out on the wider canvas" width="820">
 </p>
 
 ## Install
