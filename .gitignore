@@ -8,3 +8,4 @@ coverage/
 .verify/
 .installer-smoke-*
 .verify-shots/
+.tmp-*/

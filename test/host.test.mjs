@@ -61,14 +61,30 @@ test('every locale document is valid JSON and carries the panel metadata', () =>
   }
 });
 
-test('the client bundle registers the sidebar entry and the keyed main page', () => {
+test('the client bundle keeps the Settings section and offers the sidebar row as a config choice', () => {
   const client = read('client.js');
   assert.match(client, /__ModuleLoader__\.load/);
   assert.match(client, /id: '@ds-hu\/dsh-tailcat-remote'/);
-  assert.match(client, /sidebar\.panellist/);
-  assert.match(client, /ctx\.slots\.inject\('main'/);
-  assert.match(client, /key: 'tailcat-remote'/);
+  assert.match(client, /settings\.section/);
+  assert.match(client, /ctx\.slots\.inject\('sidebar\.panellist'/, 'the shortcut row is registered when the preference allows');
+  assert.match(client, /ctx\.slots\.inject\('main'/, 'the row needs a main-area page to select');
+  assert.match(client, /preferences\?\.sidebarEntry !== false/, 'the read defaults to the documented on state');
   assert.equal(client.includes('<div'), false, 'the client is plain React.createElement, not JSX');
+});
+
+test('the sidebar row is a Host preference, not a deployment setting', () => {
+  const preferences = read('src/preferences.js');
+  assert.match(preferences, /sidebarEntry: true/, 'the shortcut is on unless the page turns it off');
+
+  const remote = read('src/remote.js');
+  assert.match(remote, /preferences: this\.preferences\.snapshot\(\)/, 'the snapshot carries the switch');
+  assert.match(remote, /saveSidebarEntry\(sidebarEntry\)/);
+
+  const control = read('src/control.js');
+  assert.match(control, /case 'sidebar'/, 'the panel needs a write path for the switch');
+
+  const config = read('src/config.js');
+  assert.equal(config.includes('sidebarEntry'), false, 'the switch is not deployment config');
 });
 
 test('the snapshot carries the running profile as a display-only surface fact', () => {
@@ -85,6 +101,7 @@ test('the panel labels the desktop profile and explains its tray lifetime', () =
   assert.match(client, /diagSurface: '运行环境'/);
   assert.match(client, /diagSurface: 'Runtime'/);
   assert.match(client, /tcr-title-row/);
+  assert.match(client, /tcr-wire-label/);
   assert.match(client, /tcr-desktop-hint/);
   assert.equal(client.includes('dsh web'), false, 'session-expiry copy must not name one profile');
 });

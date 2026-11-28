@@ -3,8 +3,11 @@
 # One row: the Host half. `name` must be this package's name so the Loader
 # resolves the row (and therefore the code it mounts) from the profile's
 # node_modules. The browser half is declared by package.json's `dsh.client`
-# and served by the Web shell; it lives in the same page tree as the other
-# sidebar pages.
+# and served by the Web shell; it always registers one Settings section
+# (`settings.section`, id `tailcat-remote`) and the main-area page that the
+# optional sidebar shortcut selects. Whether the shortcut row is shown is a
+# panel preference (`$DSH_HOME/tailcat-remote/preferences.json`, on by
+# default), switched from the page itself; the section is always there.
 #
 # The plugin owns its runtime data in $DSH_HOME/tailcat-remote/ (the device
 # allow-list) and the tailcat private key under the platform user-config

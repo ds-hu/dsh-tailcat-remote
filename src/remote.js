@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import { RemoteAccessError, errorMessage } from './errors.js';
 import { configView } from './config.js';
 import { createDeviceStore } from './devices.js';
+import { createPreferenceStore } from './preferences.js';
 import { Door } from './door.js';
 import { buildForwardCommand } from './parse.js';
 import { qrMatrix } from './qr.js';
@@ -28,6 +29,7 @@ export class RemoteAccess {
     this.logger = ctx.logger;
     this.surface = surfaceOf(ctx);
     this.devices = createDeviceStore({ logger: ctx.logger });
+    this.preferences = createPreferenceStore({ logger: ctx.logger });
     this.installer = new TailcatInstaller(ctx, {
       logger: ctx.logger,
       releaseTag: `v${plugin.version}`,
@@ -141,6 +143,18 @@ export class RemoteAccess {
   }
 
   /**
+   * Persist one panel preference. Nothing restarts: the sidebar row is a client
+   * registration, so the page picks the change up on its next load.
+   * @param {unknown} sidebarEntry - whether the sidebar keeps the shortcut row.
+   */
+  saveSidebarEntry(sidebarEntry) {
+    return this.enqueue(async () => {
+      this.preferences.setSidebarEntry(sidebarEntry);
+      return this.snapshot();
+    });
+  }
+
+  /**
    * Install the plugin-managed tailcat, then restore the previous desired
    * tunnel state. A pre-existing user-installed tailcat is never modified.
    * @param {{force?: boolean}} [options] - reinstall even when a managed copy exists.
@@ -226,6 +240,7 @@ export class RemoteAccess {
       tailcat,
       installer: this.installer.snapshot(),
       devices: this.devices.snapshot(),
+      preferences: this.preferences.snapshot(),
       pairing,
       safety: {
         allowListEnforced: this.devices.snapshot().enforced,

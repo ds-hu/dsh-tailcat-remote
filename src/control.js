@@ -54,6 +54,9 @@ export function registerControl(ctx, remote) {
           case 'devices':
             result = await remote.saveDevices(body.allow);
             break;
+          case 'sidebar':
+            result = await remote.saveSidebarEntry(body.sidebarEntry);
+            break;
           case 'install':
             result = await remote.installTailcat({ force: body.force === true });
             break;

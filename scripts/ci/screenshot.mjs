@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { chromium } from 'playwright';
-import { assertMaskedAddress, enterRemotePage, LABELS } from './page.mjs';
+import { assertMaskedAddress, enterRemotePage, LABELS, openSidebarPage, settingsDialog } from './page.mjs';
 
 const url = process.env.DSH_URL;
 if (!url) throw new Error('DSH_URL is required');
@@ -52,10 +52,19 @@ try {
   throw error;
 }
 
-const security = page.locator('section.tcr-card').filter({ hasText: '安全' }).first();
+const security = settingsDialog(page).locator('section.tcr-card').filter({ hasText: '安全' }).first();
 await security.scrollIntoViewIfNeeded();
 await page.waitForTimeout(500);
 await security.screenshot({ path: path.join(outDir, '02-security.png') });
+
+// The optional sidebar row opens the same section as a main-area page; capture
+// that wider layout so the shortcut is documented by the screenshots too. The
+// taller viewport keeps the Interface card whole instead of clipping its hint.
+await openSidebarPage(page);
+await page.setViewportSize({ width: 1440, height: 1700 });
+await page.waitForTimeout(800);
+await page.screenshot({ path: path.join(outDir, '05-panel.png') });
+console.log('sidebar page screenshot written');
 
 
 await browser.close();

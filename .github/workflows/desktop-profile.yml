@@ -91,8 +91,10 @@ jobs:
         if: steps.harness-cache.outputs.cache-hit != 'true'
         run: npm install -g --no-audit --no-fund pnpm@11 @deepseek-ai/dsh@0.2.2-rc.5
 
+      # Only a successful install may seed the cache: a cancelled run used to
+      # save whatever partial prefix it had, and the next job restored it.
       - name: Save the Harness CLI
-        if: always() && runner.os == 'Windows' && steps.harness-cache.outputs.cache-hit != 'true'
+        if: success() && runner.os == 'Windows' && steps.harness-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: ${{ steps.npm-root.outputs.prefix }}
