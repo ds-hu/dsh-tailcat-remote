@@ -62,15 +62,10 @@ try {
 
   await assertMaskedAddress(page);
 
-  const qrToggle = page.getByRole('button', { name: LABELS.showQr, exact: true }).first();
-  if ((await qrToggle.count()) === 0) throw new Error('the pairing card must offer the QR action');
-  if (!(await qrToggle.evaluate((node) => node.classList.contains('tcr-btn-primary')))) {
-    throw new Error('the QR action must stay prominent while the code is hidden');
-  }
-  await qrToggle.click();
-  await page.locator('.tcr-qr-wrap').first().waitFor({ timeout: 10_000 });
-  // The assertions above scrolled the dialog to reach folded blocks and the QR
-  // code; the screenshot documents the top of the page, so scroll back first.
+  // The assertions above scrolled the dialog to reach folded blocks and the
+  // address; the screenshot documents the top of the page, so scroll back
+  // before shooting. The QR check runs afterwards so it does not scroll the
+  // dialog again mid-shot.
   await page.evaluate(() => {
     const section = document.querySelector('.tcr-section');
     let node = section?.parentElement;
@@ -80,6 +75,14 @@ try {
   await page.waitForTimeout(600);
 
   await page.screenshot({ path: path.join(outDir, '04-desktop.png'), fullPage: true });
+
+  const qrToggle = page.getByRole('button', { name: LABELS.showQr, exact: true }).first();
+  if ((await qrToggle.count()) === 0) throw new Error('the pairing card must offer the QR action');
+  if (!(await qrToggle.evaluate((node) => node.classList.contains('tcr-btn-primary')))) {
+    throw new Error('the QR action must stay prominent while the code is hidden');
+  }
+  await qrToggle.click();
+  await page.locator('.tcr-qr-wrap').first().waitFor({ timeout: 10_000 });
   console.log('desktop panel screenshot written to', path.join(outDir, '04-desktop.png'));
 } catch (error) {
   await page.screenshot({ path: path.join(outDir, 'debug-desktop.png') });
