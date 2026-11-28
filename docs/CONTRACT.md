@@ -129,6 +129,8 @@
 
 `pairing` 在地址尚未产生时为 `null`。`tailcat.address` 与 `pairing.address` 相同；后者附带命令与二维码矩阵。面板默认把地址显示为 `****`，点“显示地址”才展开；页面不渲染 `pairing.command` 与使用步骤；快照和复制仍携带完整值。`stderrTail` 已脱敏并截断，仅用于诊断。
 
+`tailcat.recent[].via` 是这条连接的路径（`derp:<region>` 或 `direct:<addr>:<port>`）。在 tailcat 0.8.0 下它只能来自 `[conn] open` 行——close 行既不带 `via`，也不带连接 id。因此配对只能按每个 `(peer, protocol, port)` 上开启与关闭的先后顺序进行，这假设同一键上的 close 与 open 同序到达（`tailcat.js` 的入队与出队两端都按这个假设写）；同一个键视为一条队列，超过内部上限时保留**最老**的开启记录、丢弃最新的那条——宁可让新的一条读不出路径，也不把它的路径借给前一条。关闭时配不上 open，该字段为 `null`，面板显示 `—`：可能因为连接在插件启动或 tailcat 重启之前就已开着，也可能同一键的并发连接超过了单键上限或全局上限。tailcat 自己不知道某个字段时会打 `peer=unknown` / `via=unknown`（`cmd/tailcat/connlog.go`：`peer` 来自 `logOpenClose` 的初值，`via` 来自 `path()`），插件把这两个哨兵一并上报为 `null`（`peer` 因此也可为 `null`），由面板显示自己的占位符。若上游将来在 close 行也带上 `via`，该值优先于配对得到的值。`via` 为 `null` 表示“不知道”，不表示“没走中继”。
+
 `tailcat.phase` 的取值：`stopped`、`starting`、`online`、`stopping`、`restarting`、`error`。
 
 `tailcat.binary.source` 的取值：`managed`（受管安装）、`path`（PATH 或常见安装位置）、`config`（显式 `binaryPath`）。

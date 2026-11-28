@@ -17,7 +17,19 @@ import {
 const MAX_RECENT = 20;
 const MAX_STDERR_LINES = 40;
 const MAX_CONNECTIONS = 200;
+const MAX_PENDING_PER_KEY = 8;
 const STABLE_AFTER_MS = 60_000;
+
+/**
+ * The pairing key shared by a connection's `open` and `close` lines. tailcat
+ * prints no per-connection id and no `via` on the `close` line, so these three
+ * fields are all a close has to find its open with.
+ * @param {{ peer: string | null, protocol: string, port: number | null }} record - access record.
+ * @returns {string} pairing key.
+ */
+function connectionKey(record) {
+  return `${record.peer}|${record.protocol}|${record.port}`;
+}
 
 /**
  * Supervises one tailcat server process, its saved key, its allow-list, and
@@ -64,6 +76,7 @@ export class TailcatSupervisor {
     this.stableTimer = null;
     this.restartAttempt = 0;
     this.openConnections = new Map();
+    this.pendingConnections = 0;
     this.stderrLines = [];
     this.disposing = false;
     this.versionPromise = null;
@@ -414,7 +427,7 @@ export class TailcatSupervisor {
     this.startedAt = new Date().toISOString();
     this.keyMode = this.config.addressMode === 'ephemeral' ? 'ephemeral' : 'saved';
     this.stderrLines = [];
-    this.openConnections.clear();
+    this.clearPairings();
     const generation = ++this.generation;
     this.logger.info(
       `tailcat-remote: started tailcat on ${endpoint.mode === 'socket' ? endpoint.socketPath : `127.0.0.1:${endpoint.port}`} (${allow.length > 0 ? `${allow.length} allowed device(s)` : 'address-only'})`,
@@ -503,15 +516,28 @@ export class TailcatSupervisor {
       return;
     }
     if (record.event === 'open') {
-      const key = `${record.peer}|${record.protocol}|${record.port}`;
-      if (this.openConnections.size > MAX_CONNECTIONS) this.openConnections.clear();
-      this.openConnections.set(key, { at: Date.now(), via: record.via });
+      const key = connectionKey(record);
+      const pending = this.openConnections.get(key) ?? [];
+      pending.push({ at: Date.now(), via: record.via });
+      this.openConnections.set(key, pending);
+      this.pendingConnections += 1;
+      if (pending.length > MAX_PENDING_PER_KEY) {
+        // Closes pop the head, so the queue has to keep a prefix of the opens
+        // to stay aligned with them. Dropping the head instead would pair every
+        // later close with the next connection's path: a fabricated value where
+        // the honest answer is that this connection has no known path.
+        pending.pop();
+        this.pendingConnections -= 1;
+      }
+      if (this.pendingConnections > MAX_CONNECTIONS) this.clearPairings();
       return;
     }
     if (record.event === 'close') {
-      const key = `${record.peer}|${record.protocol}|${record.port}`;
-      const opened = this.openConnections.get(key);
-      this.openConnections.delete(key);
+      const key = connectionKey(record);
+      const pending = this.openConnections.get(key);
+      const opened = pending?.shift() ?? null;
+      if (pending !== undefined && pending.length === 0) this.openConnections.delete(key);
+      if (opened !== null) this.pendingConnections -= 1;
       this.pushRecent({
         kind: 'connection',
         at: new Date().toISOString(),
@@ -519,7 +545,11 @@ export class TailcatSupervisor {
         protocol: record.protocol,
         port: record.port,
         service: record.service,
-        via: opened?.via ?? record.via ?? 'unknown',
+        // tailcat prints `via` only on the open line, so a paired open is the
+        // only path source today and an unpaired close reports none. If a
+        // future close line carries its own `via`, that value is authoritative:
+        // it names this connection rather than a guess from the queue.
+        via: record.via ?? opened?.via ?? null,
         durationMs: record.durationMs ?? (opened ? Date.now() - opened.at : null),
       });
     }
@@ -545,6 +575,16 @@ export class TailcatSupervisor {
     this.stableTimer.unref?.();
     if (changed) this.logger.info('tailcat-remote: tunnel is online');
     this.emit();
+  }
+
+  /**
+   * Forget every remembered open. A restarted tailcat owns new connections, and
+   * the pending ceiling means the table is no longer tracking anything useful.
+   * @private
+   */
+  clearPairings() {
+    this.openConnections.clear();
+    this.pendingConnections = 0;
   }
 
   /** @private */

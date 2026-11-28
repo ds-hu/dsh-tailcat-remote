@@ -42,11 +42,13 @@ export function parseAccessLine(line) {
   const event = match[2];
   const fields = {};
   for (const field of match[3].matchAll(/([A-Za-z]+)=([^\s]+)/g)) fields[field[1]] = field[2];
+  const key = knownOrNull(fields.key);
+  const peer = knownOrNull(fields.peer);
   if (tag === 'peer') {
     return {
       kind: 'peer',
       decision: event,
-      peer: fields.key ? sanitizePeer(fields.key) : 'unknown',
+      peer: key === null ? null : sanitizePeer(key),
       reason: fields.reason ?? null,
     };
   }
@@ -63,13 +65,26 @@ export function parseAccessLine(line) {
   return {
     kind: 'connection',
     event,
-    peer: fields.peer ? sanitizePeer(fields.peer) : 'unknown',
+    peer: peer === null ? null : sanitizePeer(peer),
     protocol: fields.proto ?? 'tcp',
     port: parsePort(fields.port),
     service: fields.service ?? 'forward',
-    via: fields.via ?? null,
+    via: knownOrNull(fields.via),
     durationMs: fields.duration ? parseDurationMs(fields.duration) : null,
   };
+}
+
+/**
+ * tailcat prints the literal `unknown` when it could not determine a field: a
+ * connection whose remote address traces back to no peer, or a peer with
+ * neither a direct address nor a relay. That is the absence of a value, so
+ * report null and let the panel use its own placeholder instead of echoing an
+ * English sentinel into a translated interface.
+ * @param {string | undefined} value - a parsed `key=`, `peer=` or `via=` field.
+ * @returns {string | null} the value, or null when tailcat did not know it.
+ */
+function knownOrNull(value) {
+  return value === undefined || value === '' || value === 'unknown' ? null : value;
 }
 
 /**
