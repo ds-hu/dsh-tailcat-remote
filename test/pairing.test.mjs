@@ -127,6 +127,17 @@ test('a path tailcat itself could not determine never reaches the panel', () => 
   assert.equal(entry.peer, null);
 });
 
+test('a close that names its own path wins over the open it paired with', () => {
+  const sup = supervisor();
+  sup.onStderr(1, openLine('derp:sfo'));
+  sup.onStderr(
+    1,
+    `2026/11/28 02:00:01 [conn] close peer=${PEER} proto=tcp port=13080 service=forward duration=1s via=direct:10.0.0.9:4099`,
+  );
+
+  assert.equal(sup.snapshot().recent[0].via, 'direct:10.0.0.9:4099', 'the close names this connection');
+});
+
 test('a close that names its own path is used when no open was paired', () => {
   const sup = supervisor();
   sup.onStderr(

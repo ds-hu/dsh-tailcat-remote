@@ -545,9 +545,11 @@ export class TailcatSupervisor {
         protocol: record.protocol,
         port: record.port,
         service: record.service,
-        // tailcat prints `via` only on the open line, so a close with no paired
-        // open has no path to report. `null` is honest; the panel renders `—`.
-        via: opened?.via ?? record.via ?? null,
+        // tailcat prints `via` only on the open line, so a paired open is the
+        // only path source today and an unpaired close reports none. If a
+        // future close line carries its own `via`, that value is authoritative:
+        // it names this connection rather than a guess from the queue.
+        via: record.via ?? opened?.via ?? null,
         durationMs: record.durationMs ?? (opened ? Date.now() - opened.at : null),
       });
     }
