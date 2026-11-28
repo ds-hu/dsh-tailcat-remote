@@ -82,7 +82,7 @@ dsh plugin --profile web add @ds-hu/dsh-tailcat-remote
 
      ```json
      {
-       "dependencies": { "@ds-hu/dsh-tailcat-remote": "^0.2.0" },
+       "dependencies": { "@ds-hu/dsh-tailcat-remote": "^0.2.1" },
        "dsh": {
          "profile": {
            "bundles": [

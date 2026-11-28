@@ -15,7 +15,7 @@
 ```json
 {
   "ok": true,
-  "plugin": { "name": "@ds-hu/dsh-tailcat-remote", "version": "0.2.0" },
+  "plugin": { "name": "@ds-hu/dsh-tailcat-remote", "version": "0.2.1" },
   "surface": { "profile": "web" },
   "now": "2026-11-24T16:22:50.998Z",
   "web": { "protocol": "http:", "port": 3080 },

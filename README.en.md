@@ -82,7 +82,7 @@ The desktop application runs a profile named `desktop` (`$DSH_HOME/profiles/desk
 
      ```json
      {
-       "dependencies": { "@ds-hu/dsh-tailcat-remote": "^0.2.0" },
+       "dependencies": { "@ds-hu/dsh-tailcat-remote": "^0.2.1" },
        "dsh": {
          "profile": {
            "bundles": [

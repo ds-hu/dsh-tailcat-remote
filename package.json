@@ -1,6 +1,6 @@
 {
   "name": "@ds-hu/dsh-tailcat-remote",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Remote access for the DeepSeek Harness Web GUI over tailcat: one-click tailcat installation, a pairing page, a tailnet-only door, and a supervised tailcat server — for the Web and Electron desktop profiles, with no public port and no inbound firewall change.",
   "type": "module",
   "publishConfig": {
