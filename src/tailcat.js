@@ -17,7 +17,19 @@ import {
 const MAX_RECENT = 20;
 const MAX_STDERR_LINES = 40;
 const MAX_CONNECTIONS = 200;
+const MAX_PENDING_PER_KEY = 8;
 const STABLE_AFTER_MS = 60_000;
+
+/**
+ * The pairing key shared by a connection's `open` and `close` lines. tailcat
+ * prints no per-connection id and no `via` on the `close` line, so these three
+ * fields are all a close has to find its open with.
+ * @param {{ peer: string | null, protocol: string, port: number | null }} record - access record.
+ * @returns {string} pairing key.
+ */
+function connectionKey(record) {
+  return `${record.peer}|${record.protocol}|${record.port}`;
+}
 
 /**
  * Supervises one tailcat server process, its saved key, its allow-list, and
@@ -64,6 +76,7 @@ export class TailcatSupervisor {
     this.stableTimer = null;
     this.restartAttempt = 0;
     this.openConnections = new Map();
+    this.pendingConnections = 0;
     this.stderrLines = [];
     this.disposing = false;
     this.versionPromise = null;
@@ -415,6 +428,7 @@ export class TailcatSupervisor {
     this.keyMode = this.config.addressMode === 'ephemeral' ? 'ephemeral' : 'saved';
     this.stderrLines = [];
     this.openConnections.clear();
+    this.pendingConnections = 0;
     const generation = ++this.generation;
     this.logger.info(
       `tailcat-remote: started tailcat on ${endpoint.mode === 'socket' ? endpoint.socketPath : `127.0.0.1:${endpoint.port}`} (${allow.length > 0 ? `${allow.length} allowed device(s)` : 'address-only'})`,
@@ -503,15 +517,27 @@ export class TailcatSupervisor {
       return;
     }
     if (record.event === 'open') {
-      const key = `${record.peer}|${record.protocol}|${record.port}`;
-      if (this.openConnections.size > MAX_CONNECTIONS) this.openConnections.clear();
-      this.openConnections.set(key, { at: Date.now(), via: record.via });
+      const key = connectionKey(record);
+      const pending = this.openConnections.get(key) ?? [];
+      pending.push({ at: Date.now(), via: record.via });
+      this.openConnections.set(key, pending);
+      this.pendingConnections += 1;
+      if (pending.length > MAX_PENDING_PER_KEY) {
+        pending.shift();
+        this.pendingConnections -= 1;
+      }
+      if (this.pendingConnections > MAX_CONNECTIONS) {
+        this.openConnections.clear();
+        this.pendingConnections = 0;
+      }
       return;
     }
     if (record.event === 'close') {
-      const key = `${record.peer}|${record.protocol}|${record.port}`;
-      const opened = this.openConnections.get(key);
-      this.openConnections.delete(key);
+      const key = connectionKey(record);
+      const pending = this.openConnections.get(key);
+      const opened = pending?.shift() ?? null;
+      if (pending !== undefined && pending.length === 0) this.openConnections.delete(key);
+      if (opened !== null) this.pendingConnections -= 1;
       this.pushRecent({
         kind: 'connection',
         at: new Date().toISOString(),
@@ -519,7 +545,9 @@ export class TailcatSupervisor {
         protocol: record.protocol,
         port: record.port,
         service: record.service,
-        via: opened?.via ?? record.via ?? 'unknown',
+        // tailcat prints `via` only on the open line, so a close with no paired
+        // open has no path to report. `null` is honest; the panel renders `—`.
+        via: opened?.via ?? record.via ?? null,
         durationMs: record.durationMs ?? (opened ? Date.now() - opened.at : null),
       });
     }

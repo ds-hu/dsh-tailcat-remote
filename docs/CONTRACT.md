@@ -129,6 +129,8 @@
 
 `pairing` 在地址尚未产生时为 `null`。`tailcat.address` 与 `pairing.address` 相同；后者附带命令与二维码矩阵。面板默认把地址显示为 `****`，点“显示地址”才展开；页面不渲染 `pairing.command` 与使用步骤；快照和复制仍携带完整值。`stderrTail` 已脱敏并截断，仅用于诊断。
 
+`tailcat.recent[].via` 是这条连接的路径（`derp:<region>` 或 `direct:<addr>:<port>`），只能从 `[conn] open` 行取到——tailcat 的 `[conn] close` 行不带 `via`。因此配对按每个 `(peer, protocol, port)` 上开启与关闭的先后顺序进行；关闭时配不上 open（例如连接在插件启动或 tailcat 重启之前就已开着，或同一键的并发连接超过内部队列上限）该字段为 `null`，面板显示 `—`。`via` 为 `null` 表示“不知道”，不表示“没走中继”。
+
 `tailcat.phase` 的取值：`stopped`、`starting`、`online`、`stopping`、`restarting`、`error`。
 
 `tailcat.binary.source` 的取值：`managed`（受管安装）、`path`（PATH 或常见安装位置）、`config`（显式 `binaryPath`）。
