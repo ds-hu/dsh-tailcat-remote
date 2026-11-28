@@ -427,8 +427,7 @@ export class TailcatSupervisor {
     this.startedAt = new Date().toISOString();
     this.keyMode = this.config.addressMode === 'ephemeral' ? 'ephemeral' : 'saved';
     this.stderrLines = [];
-    this.openConnections.clear();
-    this.pendingConnections = 0;
+    this.clearPairings();
     const generation = ++this.generation;
     this.logger.info(
       `tailcat-remote: started tailcat on ${endpoint.mode === 'socket' ? endpoint.socketPath : `127.0.0.1:${endpoint.port}`} (${allow.length > 0 ? `${allow.length} allowed device(s)` : 'address-only'})`,
@@ -523,13 +522,14 @@ export class TailcatSupervisor {
       this.openConnections.set(key, pending);
       this.pendingConnections += 1;
       if (pending.length > MAX_PENDING_PER_KEY) {
-        pending.shift();
+        // Closes pop the head, so the queue has to keep a prefix of the opens
+        // to stay aligned with them. Dropping the head instead would pair every
+        // later close with the next connection's path: a fabricated value where
+        // the honest answer is that this connection has no known path.
+        pending.pop();
         this.pendingConnections -= 1;
       }
-      if (this.pendingConnections > MAX_CONNECTIONS) {
-        this.openConnections.clear();
-        this.pendingConnections = 0;
-      }
+      if (this.pendingConnections > MAX_CONNECTIONS) this.clearPairings();
       return;
     }
     if (record.event === 'close') {
@@ -573,6 +573,16 @@ export class TailcatSupervisor {
     this.stableTimer.unref?.();
     if (changed) this.logger.info('tailcat-remote: tunnel is online');
     this.emit();
+  }
+
+  /**
+   * Forget every remembered open. A restarted tailcat owns new connections, and
+   * the pending ceiling means the table is no longer tracking anything useful.
+   * @private
+   */
+  clearPairings() {
+    this.openConnections.clear();
+    this.pendingConnections = 0;
   }
 
   /** @private */

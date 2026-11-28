@@ -73,6 +73,25 @@ test('parseAccessLine records a refusal as a peer decision', () => {
   });
 });
 
+test('parseAccessLine reports tailcat’s "unknown" sentinel as null', () => {
+  // tailcat emits `peer=unknown via=unknown` when PeerKey or the peer's path is
+  // not resolvable; that is the absence of a value, not a value to display.
+  const blind = parseAccessLine(
+    '2026/11/28 02:00:00 [conn] open peer=unknown proto=tcp port=13080 service=forward via=unknown',
+  );
+  assert.equal(blind.peer, null);
+  assert.equal(blind.via, null);
+
+  const half = parseAccessLine(
+    `2026/11/28 02:00:00 [conn] open peer=${KEY} proto=tcp port=13080 service=forward via=unknown`,
+  );
+  assert.equal(half.peer, `nodekey:${'a'.repeat(8)}…${'a'.repeat(4)}`, 'a known peer survives');
+  assert.equal(half.via, null, 'the sentinel does not');
+
+  const refused = parseAccessLine('2026/11/28 02:00:01 [peer] refused key=unknown reason=not-in-allow');
+  assert.equal(refused.peer, null);
+});
+
 test('sanitizePeer shortens long keys and leaves short values alone', () => {
   assert.equal(sanitizePeer(KEY), 'nodekey:aaaaaaaa…aaaa');
   assert.equal(sanitizePeer('nodekey:abc'), 'nodekey:abc');
