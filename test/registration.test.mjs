@@ -1,10 +1,10 @@
 // The browser half owns one page and two ways to reach it: the Settings section
-// is unconditional, while the sidebar row is a shortcut the Host can turn off
-// (`sidebarEntry`, on by default). These tests run the shipped bundle against a
-// fake context that enforces the same inject guard as Cordis and a stub for the
-// one Host read the shortcut costs, so a future edit that moves the page, drops
-// the shortcut, or makes the shortcut unconditional fails here instead of on a
-// user's screen.
+// and the main-area page are unconditional, while the sidebar row is a shortcut
+// the panel preference can turn off (`sidebarEntry`, on by default). These tests
+// run the shipped bundle against a fake context that enforces the same inject
+// guard as Cordis and a stub for the one Host read the shortcut costs, so a
+// future edit that moves the page, drops the shortcut, or makes the shortcut
+// unconditional fails here instead of on a user's screen.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { NS, applyPlugin, flush } from './helpers/client-harness.mjs';
@@ -17,20 +17,20 @@ const react = {
   useState: (initial) => [typeof initial === 'function' ? initial() : initial, () => {}],
 };
 
-/** A Host read that answers with a snapshot carrying the given config. */
-const hostWith = (config) => async () => ({
+/** A Host read that answers with a snapshot carrying the given preferences. */
+const hostWith = (sidebarEntry) => async () => ({
   ok: true,
   status: 200,
-  json: async () => ({ ok: true, config }),
+  json: async () => ({ ok: true, preferences: { sidebarEntry } }),
 });
 
-test('the Settings section registers before any Host read happens', () => {
+test('the section and its page register before any Host read happens', () => {
   const { registrations } = applyPlugin({ react });
 
   assert.deepEqual(
     registrations.map(({ options }) => options.name),
-    ['settings.section', 'settings.section.icon'],
-    'the section is unconditional; only the shortcut waits for the Host',
+    ['settings.section', 'settings.section.icon', 'main'],
+    'the section and the page are unconditional; only the shortcut waits for the Host',
   );
 
   const [section, icon] = registrations;
@@ -42,41 +42,42 @@ test('the Settings section registers before any Host read happens', () => {
   assert.equal(icon.options.id, NS, 'the glyph matches the section id or it never renders');
   assert.equal(typeof icon.component, 'function');
   assert.notEqual(icon.component, section.component, 'the glyph and the page are different components');
-});
 
-test('the default config adds the sidebar row and the page it selects', async () => {
-  const face = applyPlugin({ react, fetch: hostWith({ sidebarEntry: true }) });
-  await flush();
-
-  assert.deepEqual(
-    face.registrations.map(({ options }) => options.name),
-    ['settings.section', 'settings.section.icon', 'sidebar.panellist', 'main'],
-    'the shortcut exists by default, next to the section',
-  );
-
-  const [, , row, page] = face.registrations;
-  assert.equal(row.options.id, NS);
-  assert.equal(row.options.order, 30);
-  assert.equal(row.options.label(), '远程访问', 'the row names the page in the active language');
-  assert.equal(row.component, face.registrations[1].component, 'the row wears the section glyph');
-
-  assert.equal(page.options.key, NS, 'a sidebar row addresses a main panel by the same id');
+  const page = registrations[2];
+  assert.equal(page.options.key, NS, 'the main-area page keeps addressing the same id');
   assert.equal(page.options.locale, NS, 'the page receives `t` from its own dictionary');
   assert.equal(typeof page.component, 'function');
 });
 
-test('turning sidebarEntry off leaves only the Settings section', async () => {
-  const { registrations } = applyPlugin({ react, fetch: hostWith({ sidebarEntry: false }) });
+test('the default preference adds the sidebar row that selects the page', async () => {
+  const face = applyPlugin({ react, fetch: hostWith(true) });
+  await flush();
+
+  assert.deepEqual(
+    face.registrations.map(({ options }) => options.name),
+    ['settings.section', 'settings.section.icon', 'main', 'sidebar.panellist'],
+    'the shortcut exists by default, next to the section',
+  );
+
+  const row = face.registrations[3];
+  assert.equal(row.options.id, NS);
+  assert.equal(row.options.order, 30);
+  assert.equal(row.options.label(), '远程访问', 'the row names the page in the active language');
+  assert.equal(row.component, face.registrations[1].component, 'the row wears the section glyph');
+});
+
+test('turning the preference off leaves the section and the page, minus the row', async () => {
+  const { registrations } = applyPlugin({ react, fetch: hostWith(false) });
   await flush();
 
   assert.deepEqual(
     registrations.map(({ options }) => options.name),
-    ['settings.section', 'settings.section.icon'],
-    'the page stays reachable in Settings; only the shortcut disappears',
+    ['settings.section', 'settings.section.icon', 'main'],
+    'the page stays addressable and the section stays visible; only the row disappears',
   );
 });
 
-test('an unreadable config keeps the documented default instead of hiding the row', async () => {
+test('an unreadable preference keeps the documented default instead of hiding the row', async () => {
   const failing = async () => {
     throw new Error('sidecar unreachable');
   };
@@ -99,10 +100,10 @@ test('an unreadable config keeps the documented default instead of hiding the ro
 });
 
 test('every registration waits for its slot type to be declared', async () => {
-  const { injections } = applyPlugin({ react, fetch: hostWith({ sidebarEntry: true }) });
+  const { injections } = applyPlugin({ react, fetch: hostWith(true) });
   await flush();
 
-  assert.deepEqual(injections, ['settings.section', 'settings.section.icon', 'sidebar.panellist', 'main']);
+  assert.deepEqual(injections, ['settings.section', 'settings.section.icon', 'main', 'sidebar.panellist']);
 });
 
 test('the section label follows the active language', () => {

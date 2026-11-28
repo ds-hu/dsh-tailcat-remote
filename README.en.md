@@ -35,7 +35,7 @@ Remote Access folds that into one plugin. The Host supervises a `tailcat` proces
 - **The pairing page stays compact.** It shows the address, QR code, and local URL only; the client command and step list are no longer rendered. See **Use** below for the command example.
 - **A key allow-list.** The address is the only credential by default. Add client public keys and unauthorized devices are refused during the tailcat handshake.
 - **Rotate the address, manage the process.** Start, stop, restart, and rotate in **Settings → Remote Access**; inspect the relay region, recent connections, refusals, and errors.
-- **The sidebar row is optional.** A shortcut row sits in the sidebar panel list by default and opens the same page. Turn `sidebarEntry` off in **Plugin management** to hide just that row; the Settings entry always stays, and a reload applies the change.
+- **The sidebar row is optional.** A shortcut row sits in the sidebar panel list by default and opens the same page. The page's **Interface** card switches it off; the Settings entry always stays, and a reload applies the change.
 - **Log in once.** The first remote visit runs the normal DSH login flow and then keeps an HttpOnly cookie. The token never appears in the remote URL.
 - **The same page locally and remotely.** The panel works through DSH's owner API, so both views behave alike.
 

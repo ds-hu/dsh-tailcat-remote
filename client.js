@@ -236,6 +236,10 @@ window.__ModuleLoader__.load({
       surfaceHint: '桌面版：关闭窗口不会中断远程访问（应用继续在系统托盘运行）；退出桌面应用会断开隧道。',
       refresh: '刷新',
       loading: '正在读取远程访问状态…',
+      interfaceTitle: '界面',
+      sidebarEntryLabel: '在侧边栏显示入口',
+      sidebarEntryHint: '关闭后只保留「设置 → 远程访问」。刷新页面后生效。',
+      noticeSidebarSaved: '已保存；刷新页面后生效。',
       statusLabel: '隧道',
       statusOnline: '运行中',
       statusStarting: '启动中',
@@ -373,6 +377,10 @@ window.__ModuleLoader__.load({
       surfaceHint: 'Desktop: closing the window keeps remote access alive (the app stays in the system tray); quitting the desktop app ends the tunnel.',
       refresh: 'Refresh',
       loading: 'Reading remote-access state…',
+      interfaceTitle: 'Interface',
+      sidebarEntryLabel: 'Show a sidebar entry',
+      sidebarEntryHint: 'Off keeps only Settings → Remote Access. Reload the page to apply.',
+      noticeSidebarSaved: 'Saved. Reload the page to apply.',
       statusLabel: 'Tunnel',
       statusOnline: 'Online',
       statusStarting: 'Starting',
@@ -552,6 +560,16 @@ window.__ModuleLoader__.load({
       .tcr-chips { display: flex; flex-wrap: wrap; gap: 6px; }
       .tcr-chip { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 6px; border: 1px solid var(--dsw-alias-border-l3); background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-secondary); font-size: 11px; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
       .tcr-hero-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--dsw-alias-border-l3); }
+      .tcr-setting { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+      .tcr-setting-copy { min-width: 0; }
+      .tcr-setting-title { margin: 0; font-size: 13.5px; line-height: 1.5; font-weight: 500; }
+      .tcr-setting-hint { margin: 4px 0 0; font-size: 12px; line-height: 1.55; color: var(--dsw-alias-label-tertiary); }
+      .tcr-switch { appearance: none; display: inline-flex; align-items: center; flex: 0 0 auto; width: 40px; height: 22px; padding: 2px; margin: 2px 0 0; border-radius: 999px; border: 1px solid var(--dsw-alias-border-l2); background: var(--dsw-alias-bg-layer-3); cursor: pointer; transition: background .15s ease, border-color .15s ease; }
+      .tcr-switch-knob { width: 16px; height: 16px; border-radius: 50%; background: var(--dsw-alias-label-secondary); transition: transform .15s ease, background .15s ease; }
+      .tcr-switch-on { background: var(--dsw-alias-brand-primary); border-color: transparent; }
+      .tcr-switch-on .tcr-switch-knob { background: var(--dsw-alias-label-primary-foreground); transform: translateX(18px); }
+      .tcr-switch:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: 2px; }
+      .tcr-switch:disabled { opacity: .45; cursor: not-allowed; }
       .tcr-card { background: var(--dsw-alias-bg-layer-1); border: 1px solid var(--dsw-alias-border-l3); border-radius: 16px; padding: 17px 19px; }
       .tcr-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
       .tcr-card-title { margin: 0; font-size: 15px; line-height: 1.4; font-weight: 600; }
@@ -795,6 +813,27 @@ window.__ModuleLoader__.load({
         ),
         chips.length ? h('div', { className: 'tcr-chips' }, chips.map((text, index) => h('span', { key: index, className: 'tcr-chip' }, text))) : null,
         children ? h('div', { className: 'tcr-hero-actions' }, children) : null,
+      );
+    }
+
+    /**
+     * A boolean preference as a real switch: the page has no checkbox styling of
+     * its own, and `role="switch"` is what a screen reader announces the state as.
+     * @param {{ checked: boolean, disabled?: boolean, label: string, onChange: (next: boolean) => void }} props - switch props.
+     */
+    function Switch({ checked, disabled = false, label, onChange }) {
+      return h(
+        'button',
+        {
+          type: 'button',
+          role: 'switch',
+          'aria-checked': checked ? 'true' : 'false',
+          'aria-label': label,
+          className: `tcr-switch${checked ? ' tcr-switch-on' : ''}`,
+          disabled,
+          onClick: () => onChange(!checked),
+        },
+        h('span', { className: 'tcr-switch-knob' }),
       );
     }
 
@@ -1048,6 +1087,7 @@ window.__ModuleLoader__.load({
       const install = snapshot.plugin?.name ?? '@ds-hu/dsh-tailcat-remote';
       const localUrl = pairing ? `http://127.0.0.1:${pairing.localPort}/` : '';
       const saveBusy = busy === 'devices';
+      const sidebarEntry = snapshot.preferences?.sidebarEntry !== false;
 
       const saveDevices = async () => {
         const allow = draft
@@ -1061,6 +1101,10 @@ window.__ModuleLoader__.load({
       const rotate = async () => {
         setRotateArmed(false);
         await act('rotate', {}, 'noticeRotated');
+      };
+
+      const setSidebarEntry = async (next) => {
+        await act('sidebar', { sidebarEntry: next }, 'noticeSidebarSaved');
       };
 
       return h(
@@ -1309,6 +1353,27 @@ window.__ModuleLoader__.load({
         ),
 
         h(
+          Card,
+          { title: t('interfaceTitle') },
+          h(
+            'div',
+            { className: 'tcr-setting' },
+            h(
+              'div',
+              { className: 'tcr-setting-copy' },
+              h('p', { className: 'tcr-setting-title' }, t('sidebarEntryLabel')),
+              h('p', { className: 'tcr-setting-hint' }, t('sidebarEntryHint')),
+            ),
+            h(Switch, {
+              checked: sidebarEntry,
+              disabled: Boolean(busy),
+              label: t('sidebarEntryLabel'),
+              onChange: (next) => void setSidebarEntry(next),
+            }),
+          ),
+        ),
+
+        h(
           Disclosure,
           { title: t('diagnosticsTitle') },
           h(
@@ -1383,11 +1448,11 @@ window.__ModuleLoader__.load({
     }
 
     /**
-     * Reads whether the Host's config still asks for a sidebar row. The Settings
-     * section is registered unconditionally; only the shortcut is optional, so a
-     * failed read keeps the documented default instead of hiding a feature over
-     * one request.
-     * @returns {Promise<boolean>} whether to register the sidebar row and its page.
+     * Reads whether the panel preference still asks for a sidebar row. The
+     * Settings section and the main-area page are registered unconditionally;
+     * only the shortcut row is optional, so a failed read keeps the documented
+     * default instead of hiding a feature over one request.
+     * @returns {Promise<boolean>} whether to register the sidebar row.
      */
     async function readSidebarEntry() {
       if (typeof fetch !== 'function') return true;
@@ -1400,7 +1465,7 @@ window.__ModuleLoader__.load({
         });
         if (!response.ok) return true;
         const data = await response.json();
-        return data?.config?.sidebarEntry !== false;
+        return data?.preferences?.sidebarEntry !== false;
       } catch {
         return true;
       }
@@ -1537,40 +1602,42 @@ window.__ModuleLoader__.load({
             ),
           'tailcat-remote: settings section icon',
         );
+        ctx.effect(
+          () =>
+            ctx.slots.inject('main', () =>
+              ctx.slots.register(
+                {
+                  name: 'main',
+                  key: 'tailcat-remote',
+                  locale: NS,
+                },
+                RemotePage,
+              ),
+            ),
+          'tailcat-remote: page',
+        );
         ctx.effect(() => {
           let disposed = false;
-          let seats;
+          let row;
           void readSidebarEntry().then((enabled) => {
             if (disposed || !enabled) return;
-            seats = [
-              ctx.slots.inject('sidebar.panellist', () =>
-                ctx.slots.register(
-                  {
-                    name: 'sidebar.panellist',
-                    id: 'tailcat-remote',
-                    order: 30,
-                    label: () => translate(t, 'nav'),
-                  },
-                  PanelIcon,
-                ),
+            row = ctx.slots.inject('sidebar.panellist', () =>
+              ctx.slots.register(
+                {
+                  name: 'sidebar.panellist',
+                  id: 'tailcat-remote',
+                  order: 30,
+                  label: () => translate(t, 'nav'),
+                },
+                PanelIcon,
               ),
-              ctx.slots.inject('main', () =>
-                ctx.slots.register(
-                  {
-                    name: 'main',
-                    key: 'tailcat-remote',
-                    locale: NS,
-                  },
-                  RemotePage,
-                ),
-              ),
-            ];
+            );
           });
           return () => {
             disposed = true;
-            for (const dispose of seats ?? []) dispose();
+            row?.();
           };
-        }, 'tailcat-remote: sidebar entry');
+        }, 'tailcat-remote: sidebar row');
       },
     };
   },

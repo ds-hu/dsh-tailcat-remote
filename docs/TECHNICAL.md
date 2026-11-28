@@ -111,6 +111,7 @@ sequenceDiagram
 | --- | --- | --- |
 | `$DSH_HOME/tailcat-remote.sock` | door 的 Unix socket，模式 0600（Windows 使用回环 TCP） | Door |
 | `$DSH_HOME/tailcat-remote/devices.json` | 设备公钥白名单，模式 0600，原子替换 | RemoteAccess |
+| `$DSH_HOME/tailcat-remote/preferences.json` | 面板偏好（目前只有 `sidebarEntry`），模式 0600，原子替换；缺失/损坏按默认值 | RemoteAccess |
 | `$DSH_HOME/tailcat-remote/bin/tailcat[.exe]` | 受管可执行文件，模式 0755，原子替换 | TailcatInstaller |
 | `$DSH_HOME/tailcat-remote/bin/tailcat.json` | 受管版本、来源、校验值、安装时间，模式 0600 | TailcatInstaller |
 | `<user config>/tailcat/keys/<keyName>.private.json` | tailcat 保存的服务器密钥；路径按 Go `os.UserConfigDir`：Linux XDG/.config、macOS `Application Support`、Windows `%AppData%` | tailcat 自己 |
@@ -137,7 +138,6 @@ sequenceDiagram
 | `maxRestartAttempts` | `10` | 连续重启上限。 |
 | `restartBaseDelayMs` | `500` | 首次退避；之后翻倍。 |
 | `restartMaxDelayMs` | `30000` | 单次退避上限。 |
-| `sidebarEntry` | `true` | 是否在侧边栏的面板列表里保留快捷入口。设置里的页面始终存在，关掉只是去掉那行快捷方式；改完刷新页面生效。 |
 
 `addressMode: ephemeral` 与 `autoStart` 同时开启时，每次 Host 重启地址都会变化；想用二维码长期配对就用 `stable`，需要换地址时在面板点“更换地址”。
 
@@ -145,7 +145,7 @@ sequenceDiagram
 
 页面本体是 `settings.section` 里的一个 section：id `tailcat-remote`，`order: 30`（排在 Agent 预设之后），`locale: 'tailcat-remote'` 拿到注入的 `t`；导航图标是同 id 的 `settings.section.icon`。这一份注册是无条件的——设置里永远能进。
 
-侧边栏的面板列表另有一行快捷入口，由 `sidebarEntry` 决定（默认开）：开时同时注册 `sidebar.panellist` 的一行（同 id、同图标、`order: 30`）和它要选中的 `main` 页面（`key: 'tailcat-remote'`，`locale: tailcat-remote`）。两处是同一个 `RemoteSection`；`main` 的那一份套在 `.tcr-page` 里，由它负责整页高度和滚动，而设置里的那一份什么都不接管。这个开关是 Host 配置，客户端在 apply 时 `GET /api/tailcat-remote` 读一次 `config.sidebarEntry`，读不到就按默认开处理——一次请求失败不该让快捷入口消失。开关在插件配置表单里改，改完刷新页面生效。
+侧边栏的面板列表另有一行快捷入口，是 **面板偏好** 而不是部署配置：`preferences.json` 的 `sidebarEntry`，默认开，页面里的「界面」卡片直接开关它。开时客户端额外注册 `sidebar.panellist` 的一行（同 id、同图标、`order: 30`）；`main` 页面（`key: 'tailcat-remote'`，`locale: tailcat-remote`）无条件注册，所以关掉入口、或旧布局还记着这个面板时，页面仍然可被选中，不会留下空白画布。两处是同一个 `RemoteSection`；`main` 的那一份套在 `.tcr-page` 里，由它负责整页高度和滚动，而设置里的那一份什么都不接管。客户端在 apply 时 `GET /api/tailcat-remote` 读一次 `preferences.sidebarEntry`，读不到就按默认开处理——一次请求失败不该让快捷入口消失；开关写入后刷新页面生效。
 
 设置面板的内容列拥有滚动和水平内边距，所以页面自己不设高度、不设 `overflow`，只描述这一列里的内容。面板宽 800，内容列约 560px，因此诊断网格是单列，**状态与诊断**和**最近连接**默认折叠，状态与配对两块保持在第一屏。侧边栏那一份跑在 `main` 里，网格在宽屏变两列。
 

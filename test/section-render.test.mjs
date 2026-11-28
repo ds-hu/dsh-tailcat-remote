@@ -80,6 +80,7 @@ const snapshot = {
     system: { status: 'found', path: '/usr/local/bin/tailcat', version: 'v0.8.0', compatible: true, checkedAt: '2026-11-24T16:22:01.000Z' },
   },
   devices: { allow: [], enforced: false, count: 0, file: '/home/you/.dsh/tailcat-remote/devices.json', updatedAt: null, warnings: [] },
+  preferences: { sidebarEntry: true, file: '/home/you/.dsh/tailcat-remote/preferences.json', updatedAt: null, warnings: [] },
   pairing: {
     address: 'tc0123456789abcdef',
     port: 13080,
@@ -227,7 +228,7 @@ async function renderPage(respond) {
   const face = applyPlugin({ react, fetch: respond });
   await flush();
   const page = face.registrations.find(({ options }) => options.name === 'main');
-  assert.ok(page, 'the default config registers the page behind the sidebar row');
+  assert.ok(page, 'the page is registered whether or not the shortcut row is on');
   const t = face.translator(NS);
 
   const previous = {
@@ -262,6 +263,10 @@ test('the section renders the pairing flow with diagnostics folded', async () =>
   assert.equal(view.classNames.includes('tcr-chip'), true, 'the wire chips name the relay and the door');
   assert.ok(view.text.includes('中继区域 Tokyo (304)'), 'the relay region is visible without opening diagnostics');
   assert.ok(view.text.includes('Unix socket'), 'the door mode is visible without opening diagnostics');
+  assert.ok(view.text.includes('界面'), 'the interface card owns the page-level switches');
+  assert.ok(view.text.includes('在侧边栏显示入口'), 'the sidebar shortcut is switchable from the page');
+  assert.ok(view.classNames.some((name) => name.includes('tcr-switch')), 'the preference renders as a real switch');
+  assert.ok(view.classNames.some((name) => name.includes('tcr-switch-on')), 'the stored on state shows as on');
   assert.ok(view.text.includes('安全'), 'the allow-list card renders');
   assert.ok(view.text.includes('状态与诊断'), 'diagnostics render as a summary');
   assert.ok(view.text.includes('最近连接'), 'connection history renders as a summary');
@@ -296,6 +301,16 @@ test('the section owns no page frame: the dialog owns height and scrolling', asy
     false,
     'a page-level scroll container would nest a second scrollbar inside the dialog',
   );
+});
+
+test('the interface switch follows the stored preference', async () => {
+  const view = await renderSection(
+    okResponse({ ...snapshot, preferences: { ...snapshot.preferences, sidebarEntry: false } }),
+  );
+
+  assert.ok(view.classNames.some((name) => name.includes('tcr-switch')), 'the switch is always rendered');
+  assert.equal(view.classNames.some((name) => name.includes('tcr-switch-on')), false, 'an off preference renders an off switch');
+  assert.ok(view.text.includes('在侧边栏显示入口'));
 });
 
 test('the page behind the sidebar row owns the scroll the section refuses', async () => {

@@ -66,19 +66,25 @@ test('the client bundle keeps the Settings section and offers the sidebar row as
   assert.match(client, /__ModuleLoader__\.load/);
   assert.match(client, /id: '@ds-hu\/dsh-tailcat-remote'/);
   assert.match(client, /settings\.section/);
-  assert.match(client, /ctx\.slots\.inject\('sidebar\.panellist'/, 'the shortcut row is registered when config allows');
-  assert.match(client, /ctx\.slots\.inject\('main'/, 'the shortcut needs a main-area page to select');
-  assert.match(client, /config\?\.sidebarEntry !== false/, 'the read defaults to the documented on state');
+  assert.match(client, /ctx\.slots\.inject\('sidebar\.panellist'/, 'the shortcut row is registered when the preference allows');
+  assert.match(client, /ctx\.slots\.inject\('main'/, 'the row needs a main-area page to select');
+  assert.match(client, /preferences\?\.sidebarEntry !== false/, 'the read defaults to the documented on state');
   assert.equal(client.includes('<div'), false, 'the client is plain React.createElement, not JSX');
 });
 
-test('the sidebar row is documented as a switch, not a removal', () => {
-  const config = read('src/config.js');
-  assert.match(config, /sidebarEntry: z\s*\.boolean\(\)\s*\.default\(true\)/s);
-  assert.match(config, /sidebarEntry: config\.sidebarEntry/);
+test('the sidebar row is a Host preference, not a deployment setting', () => {
+  const preferences = read('src/preferences.js');
+  assert.match(preferences, /sidebarEntry: true/, 'the shortcut is on unless the page turns it off');
 
-  const patch = read('cordis.patch.yml');
-  assert.match(patch, /sidebarEntry/);
+  const remote = read('src/remote.js');
+  assert.match(remote, /preferences: this\.preferences\.snapshot\(\)/, 'the snapshot carries the switch');
+  assert.match(remote, /saveSidebarEntry\(sidebarEntry\)/);
+
+  const control = read('src/control.js');
+  assert.match(control, /case 'sidebar'/, 'the panel needs a write path for the switch');
+
+  const config = read('src/config.js');
+  assert.equal(config.includes('sidebarEntry'), false, 'the switch is not deployment config');
 });
 
 test('the snapshot carries the running profile as a display-only surface fact', () => {

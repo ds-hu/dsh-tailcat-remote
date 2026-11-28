@@ -31,7 +31,6 @@
     "maxRestartAttempts": 10,
     "restartBaseDelayMs": 500,
     "restartMaxDelayMs": 30000,
-    "sidebarEntry": true,
     "customDerpMap": false
   },
   "door": {
@@ -111,6 +110,12 @@
     "updatedAt": null,
     "warnings": []
   },
+  "preferences": {
+    "sidebarEntry": true,
+    "file": "/home/you/.dsh/tailcat-remote/preferences.json",
+    "updatedAt": null,
+    "warnings": []
+  },
   "pairing": {
     "address": "tc…",
     "port": 13080,
@@ -127,6 +132,8 @@
 `tailcat.phase` 的取值：`stopped`、`starting`、`online`、`stopping`、`restarting`、`error`。
 
 `tailcat.binary.source` 的取值：`managed`（受管安装）、`path`（PATH 或常见安装位置）、`config`（显式 `binaryPath`）。
+
+`preferences` 是面板自己拥有的偏好，与部署配置分开：`sidebarEntry` 表示侧栏是否保留一行快捷入口（默认 `true`）。客户端在 apply 时读一次它来决定是否注册 `sidebar.panellist`；`main` 页面与设置 section 始终注册。文件缺失、损坏或字段不是布尔值时按默认值处理并带 `warnings`，不会因为一次读失败而让入口消失。
 
 ### `surface`
 
@@ -156,6 +163,7 @@ Host 启动这个插件时所在的 profile，只在面板里用于显示运行�
 | `restart` | — | 停掉再用当前配置启动；地址通常不变 | 新进程、`restarts` 递增 |
 | `rotate` | — | 覆盖保存密钥、重启、等新地址上线 | `tailcat.address` 改变，旧地址失效 |
 | `devices` | `allow: string[]` | 规范化并持久化白名单；运行中的 tailcat 会重启以应用 | `devices.enforced` / `count` 更新 |
+| `sidebar` | `sidebarEntry: boolean` | 持久化侧栏入口开关。不重启任何进程；页面在下次加载时按新值注册快捷行 | `preferences.sidebarEntry` 更新 |
 | `install` | `force?: boolean` | 安装受管 tailcat。默认会跳过已有受管副本；`force` 强制重新安装。隧道若在运行会短暂停止，成功后按原状态恢复 | `installer.*` 与 `tailcat.binary.source` 更新 |
 
 示例：
@@ -163,6 +171,7 @@ Host 启动这个插件时所在的 profile，只在面板里用于显示运行�
 ```json
 { "action": "devices", "allow": ["nodekey:…64 hex…"] }
 { "action": "install", "force": true }
+{ "action": "sidebar", "sidebarEntry": false }
 ```
 
 `allow: []` 表示仅凭地址访问；非空数组会变成 `tailcat serve --allow=…`。
