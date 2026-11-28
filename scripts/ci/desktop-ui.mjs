@@ -11,7 +11,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { chromium } from 'playwright';
-import { assertMaskedAddress, enterRemotePage, LABELS } from './page.mjs';
+import { assertMaskedAddress, enterRemotePage, LABELS, openDiagnostics } from './page.mjs';
 
 const url = process.env.DSH_REMOTE_URL;
 if (!url) throw new Error('DSH_REMOTE_URL is required');
@@ -51,6 +51,9 @@ try {
     throw new Error(`the desktop hint must explain the tray lifetime, got: ${await hint.innerText()}`);
   }
 
+  // Diagnostics start folded, so the runtime row has to be opened before it can
+  // be read — the same two clicks a person makes.
+  await openDiagnostics(page);
   const runtimeRow = page.locator('.tcr-row').filter({ hasText: '运行环境' }).first();
   await runtimeRow.waitFor({ timeout: 10_000 });
   if (!(await runtimeRow.innerText()).includes('桌面版')) {

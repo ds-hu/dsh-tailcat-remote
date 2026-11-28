@@ -508,21 +508,21 @@ window.__ModuleLoader__.load({
     };
 
     /**
-     * Dark/light-theme-aware page shell. All colors come from Harness theme
-     * tokens except the QR code itself, which must stay black on white.
+     * Section styling. The Settings dialog's content column owns the scroll and
+     * the horizontal padding, so this block declares neither height nor
+     * overflow — it only describes the page that sits in that column. Colors
+     * come from Harness theme tokens except the QR code itself, which must stay
+     * black on white.
      */
     const STYLE = `
-      .tcr-page { height: 100%; overflow-y: auto; background: var(--dsw-alias-bg-base); color: var(--dsw-alias-label-primary); font-family: inherit; }
-      .tcr-shell { max-width: 980px; margin: 0 auto; padding: 28px 24px 56px; display: flex; flex-direction: column; gap: 16px; }
-      .tcr-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
-      .tcr-heading { display: flex; align-items: flex-start; gap: 14px; min-width: 0; }
-      .tcr-mark { flex: 0 0 auto; width: 42px; height: 42px; border-radius: 12px; background: var(--dsw-alias-bg-layer-2); border: 1px solid var(--dsw-alias-border-l3); display: grid; place-items: center; color: var(--dsw-alias-brand-primary); }
-      .tcr-title { margin: 0; font-size: 22px; line-height: 1.25; font-weight: 600; letter-spacing: -0.01em; }
+      .tcr-section { display: flex; flex-direction: column; gap: 14px; color: var(--dsw-alias-label-primary); }
+      .tcr-head { display: flex; flex-direction: column; gap: 4px; }
+      .tcr-title { margin: 0; font-size: 18px; line-height: 1.3; font-weight: 600; letter-spacing: -0.01em; }
       .tcr-title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-      .tcr-subtitle { margin: 5px 0 0; font-size: 13px; line-height: 1.55; color: var(--dsw-alias-label-secondary); max-width: 620px; }
-      .tcr-header-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
-      .tcr-card { background: var(--dsw-alias-bg-layer-1); border: 1px solid var(--dsw-alias-border-l3); border-radius: 14px; padding: 18px 20px; }
-      .tcr-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+      .tcr-subtitle { margin: 0; font-size: 13px; line-height: 1.6; color: var(--dsw-alias-label-tertiary); }
+      .tcr-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+      .tcr-card { background: var(--dsw-alias-bg-layer-1); border: 1px solid var(--dsw-alias-border-l3); border-radius: 14px; padding: 16px 18px; }
+      .tcr-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
       .tcr-card-title { margin: 0; font-size: 15px; line-height: 1.4; font-weight: 600; }
       .tcr-card-sub { margin: 4px 0 0; font-size: 12.5px; line-height: 1.55; color: var(--dsw-alias-label-secondary); }
       .tcr-btn { appearance: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--dsw-alias-border-l2); background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-primary); font: inherit; font-size: 13px; cursor: pointer; white-space: nowrap; transition: background .15s ease, border-color .15s ease, opacity .15s ease; }
@@ -542,13 +542,13 @@ window.__ModuleLoader__.load({
       .tcr-phase-starting .tcr-dot, .tcr-phase-restarting .tcr-dot { background: var(--dsw-alias-state-warn-primary); }
       .tcr-phase-error .tcr-dot { background: var(--dsw-alias-state-error-primary); }
       .tcr-phase-stopping .tcr-dot { background: var(--dsw-alias-state-warn-primary); }
-      .tcr-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 20px; }
+      .tcr-grid { display: grid; grid-template-columns: minmax(0, 1fr); }
       .tcr-row { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; padding: 8px 0; border-bottom: 1px dashed var(--dsw-alias-border-l3); font-size: 13px; min-width: 0; }
       .tcr-row:last-child { border-bottom: 0; }
       .tcr-row-label { color: var(--dsw-alias-label-secondary); flex: 0 0 auto; }
       .tcr-row-value { text-align: right; color: var(--dsw-alias-label-primary); min-width: 0; overflow-wrap: anywhere; }
       .tcr-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-size: 12.5px; }
-      .tcr-code { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--dsw-alias-bg-layer-2); border: 1px solid var(--dsw-alias-border-l3); border-radius: 10px; padding: 10px 12px; margin-top: 8px; min-width: 0; }
+      .tcr-code { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; background: var(--dsw-alias-bg-layer-2); border: 1px solid var(--dsw-alias-border-l3); border-radius: 10px; padding: 10px 12px; margin-top: 8px; min-width: 0; }
       .tcr-code-text { min-width: 0; overflow-wrap: anywhere; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-size: 12.5px; line-height: 1.55; user-select: all; }
       .tcr-address { font-size: 13px; line-height: 1.65; }
       .tcr-label { display: block; font-size: 12px; font-weight: 500; color: var(--dsw-alias-label-secondary); margin: 0 0 6px; }
@@ -572,25 +572,30 @@ window.__ModuleLoader__.load({
       .tcr-notice { border-radius: 10px; padding: 10px 14px; font-size: 13px; border: 1px solid var(--dsw-alias-border-l3); background: var(--dsw-alias-bg-layer-2); }
       .tcr-notice-ok { border-color: color-mix(in srgb, var(--dsw-alias-state-success-primary) 35%, var(--dsw-alias-border-l3)); background: color-mix(in srgb, var(--dsw-alias-state-success-primary) 9%, var(--dsw-alias-bg-layer-1)); }
       .tcr-notice-error { border-color: color-mix(in srgb, var(--dsw-alias-state-error-primary) 35%, var(--dsw-alias-border-l3)); background: color-mix(in srgb, var(--dsw-alias-state-error-primary) 9%, var(--dsw-alias-bg-layer-1)); color: var(--dsw-alias-label-primary); }
-      .tcr-footer { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; color: var(--dsw-alias-label-tertiary); font-size: 11.5px; line-height: 1.6; padding-top: 6px; }
+      .tcr-footer { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; color: var(--dsw-alias-label-tertiary); font-size: 11.5px; line-height: 1.6; padding-top: 2px; }
       .tcr-progress { height: 6px; overflow: hidden; border-radius: 999px; background: var(--dsw-alias-bg-layer-3); margin-top: 8px; }
       .tcr-progress-bar { height: 100%; border-radius: inherit; background: var(--dsw-alias-brand-primary); transition: width .25s ease; }
       .tcr-spinner { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--dsw-alias-border-l2); border-top-color: var(--dsw-alias-brand-primary); animation: tcr-spin .8s linear infinite; }
       @keyframes tcr-spin { to { transform: rotate(360deg); } }
       .tcr-empty { color: var(--dsw-alias-label-tertiary); font-size: 13px; }
       .tcr-warning-list { margin: 8px 0 0; padding-left: 18px; color: var(--dsw-alias-state-warn-label); font-size: 12px; line-height: 1.6; }
+      .tcr-disclosure { border: 1px solid var(--dsw-alias-border-l3); border-radius: 14px; background: var(--dsw-alias-bg-layer-1); }
+      .tcr-disclosure > summary { display: flex; align-items: center; gap: 10px; padding: 14px 18px; cursor: pointer; list-style: none; font-size: 15px; line-height: 1.4; font-weight: 600; }
+      .tcr-disclosure > summary::-webkit-details-marker { display: none; }
+      .tcr-disclosure > summary::after { content: '▸'; margin-left: auto; color: var(--dsw-alias-label-tertiary); transition: transform .15s ease; }
+      .tcr-disclosure[open] > summary::after { transform: rotate(90deg); }
+      .tcr-disclosure-body { padding: 0 18px 14px; }
       @media (max-width: 720px) {
-        .tcr-shell { padding: 16px 14px 40px; }
-        .tcr-header { flex-direction: column; }
-        .tcr-header-actions { justify-content: flex-start; }
-        .tcr-grid { grid-template-columns: 1fr; }
+        .tcr-section { gap: 12px; }
+        .tcr-card { padding: 14px; }
         .tcr-recent-row { grid-template-columns: 1.4fr .6fr .9fr; }
         .tcr-recent-row > :nth-child(4), .tcr-recent-row > :nth-child(5) { display: none; }
       }
     `;
 
     /**
-     * Sidebar glyph. Inherits the row color so the active state is the shell's.
+     * The section glyph in the Settings navigation. Inherits the row color so
+     * the active state stays the shell's, and ignores `active` on purpose.
      * @param {{ size?: number }} props - slot-injected icon props.
      */
     function PanelIcon({ size = 20 }) {
@@ -810,8 +815,23 @@ window.__ModuleLoader__.load({
       return { snapshot, error, busy, notice, setNotice, act, reload };
     }
 
-    /** The page registered at the `main` key `tailcat-remote`. */
-    function RemotePage({ t }) {
+    /**
+     * A collapsed block of read-only detail. The section sits inside the
+     * Settings dialog, whose content column owns the scroll: diagnostics and
+     * connection history start folded so the pairing flow stays above the fold.
+     * @param {{ title: string, children?: unknown }} props - summary and body.
+     */
+    function Disclosure({ title, children }) {
+      return h(
+        'details',
+        { className: 'tcr-disclosure' },
+        h('summary', null, title),
+        h('div', { className: 'tcr-disclosure-body' }, children),
+      );
+    }
+
+    /** The section registered in the Settings dialog under `tailcat-remote`. */
+    function RemoteSection({ t }) {
       const { snapshot, error, busy, notice, setNotice, act, reload } = useRemoteState();
       const [showQr, setShowQr] = useState(false);
       const [showAddress, setShowAddress] = useState(false);
@@ -870,28 +890,38 @@ window.__ModuleLoader__.load({
 
       const reportCopy = (text, ok) => setLocalNotice({ kind: ok ? 'ok' : 'error', text });
 
+      const heading = h(
+        'div',
+        { className: 'tcr-head' },
+        h(
+          'div',
+          { className: 'tcr-title-row' },
+          h('h2', { className: 'tcr-title' }, t('title')),
+          desktop ? h('span', { className: 'tcr-badge tcr-surface-badge' }, t('surfaceDesktop')) : null,
+        ),
+        h('p', { className: 'tcr-subtitle' }, t('subtitle')),
+      );
+
       if (!snapshot) {
         return h(
-          'div',
-          { className: 'tcr-page' },
+          'section',
+          { className: 'tcr-section' },
           h('style', null, STYLE),
-          h(
-            'div',
-            { className: 'tcr-shell' },
-            h('div', { className: 'tcr-header' }, h('div', { className: 'tcr-heading' },
-              h('div', { className: 'tcr-mark' }, h(PanelIcon, { size: 22 })),
-              h('div', null, h('h1', { className: 'tcr-title' }, t('title')), h('p', { className: 'tcr-subtitle' }, t('subtitle'))),
-            )),
-            error
-              ? h(
-                  Alert,
-                  { tone: 'danger', title: t('unavailableTitle') },
-                  h('p', null, t('unavailableBody')),
-                  h('p', { className: 'tcr-mono' }, error),
-                  h('div', { className: 'tcr-actions' }, h(Button, { onClick: () => void reload() }, t('retry'))),
-                )
-              : h('div', { className: 'tcr-empty' }, h('span', { className: 'tcr-spinner', style: { display: 'inline-block', verticalAlign: 'middle', marginRight: 8 } }), t('loading')),
-          ),
+          heading,
+          error
+            ? h(
+                Alert,
+                { tone: 'danger', title: t('unavailableTitle') },
+                h('p', null, t('unavailableBody')),
+                h('p', { className: 'tcr-mono' }, error),
+                h('div', { className: 'tcr-actions' }, h(Button, { onClick: () => void reload() }, t('retry'))),
+              )
+            : h(
+                'div',
+                { className: 'tcr-empty' },
+                h('span', { className: 'tcr-spinner', style: { display: 'inline-block', verticalAlign: 'middle', marginRight: 8 } }),
+                t('loading'),
+              ),
         );
       }
 
@@ -965,340 +995,323 @@ window.__ModuleLoader__.load({
       };
 
       return h(
-        'div',
-        { className: 'tcr-page' },
+        'section',
+        { className: 'tcr-section' },
         h('style', null, STYLE),
+        heading,
+        desktop ? h('p', { className: 'tcr-hint tcr-desktop-hint', style: { marginTop: 0 } }, t('surfaceHint')) : null,
         h(
           'div',
-          { className: 'tcr-shell' },
-          h(
-            'div',
-            { className: 'tcr-header' },
-            h(
-              'div',
-              { className: 'tcr-heading' },
-              h('div', { className: 'tcr-mark' }, h(PanelIcon, { size: 22 })),
-              h(
-                'div',
-                null,
-                h(
-                  'div',
-                  { className: 'tcr-title-row' },
-                  h('h1', { className: 'tcr-title' }, t('title')),
-                  desktop ? h('span', { className: 'tcr-badge tcr-surface-badge' }, t('surfaceDesktop')) : null,
-                ),
-                h('p', { className: 'tcr-subtitle' }, t('subtitle')),
-              ),
-            ),
-            h(
-              'div',
-              { className: 'tcr-header-actions' },
-              h(StatusPill, { phase, t }),
-              phase === 'stopped' || phase === 'error'
-                ? h(
-                    Button,
-                    {
-                      variant: 'primary',
-                      disabled: anyBusy,
-                      onClick: () => void act('start', {}, 'noticeStarted'),
-                    },
-                    t('start'),
-                  )
-                : h(
-                    Button,
-                    {
-                      disabled: anyBusy,
-                      onClick: () => void act('stop', {}, 'noticeStopped'),
-                    },
-                    t('stop'),
-                  ),
-              h(
+          { className: 'tcr-toolbar' },
+          h(StatusPill, { phase, t }),
+          phase === 'stopped' || phase === 'error'
+            ? h(
                 Button,
-                { disabled: anyBusy, onClick: () => void act('restart', {}, 'noticeRestarted') },
-                t('restart'),
+                {
+                  variant: 'primary',
+                  disabled: anyBusy,
+                  onClick: () => void act('start', {}, 'noticeStarted'),
+                },
+                t('start'),
+              )
+            : h(
+                Button,
+                {
+                  disabled: anyBusy,
+                  onClick: () => void act('stop', {}, 'noticeStopped'),
+                },
+                t('stop'),
               ),
-              h(Button, { variant: 'ghost', disabled: anyBusy, onClick: () => void reload() }, t('refresh')),
-            ),
-          ),
-
-          desktop ? h('p', { className: 'tcr-hint tcr-desktop-hint', style: { marginTop: 0 } }, t('surfaceHint')) : null,
-
-          displayedNotice
-            ? h(
-                'div',
-                { className: `tcr-notice ${displayedNotice.kind === 'ok' ? 'tcr-notice-ok' : 'tcr-notice-error'}`, role: 'status' },
-                displayedNotice.key ? t(displayedNotice.key) : displayedNotice.text,
-              )
-            : null,
-          busyKey ? h('div', { className: 'tcr-hint' }, h('span', { className: 'tcr-spinner', style: { display: 'inline-block', verticalAlign: 'middle', marginRight: 8 } }), t(busyKey)) : null,
-
-          error ? h(Alert, { tone: 'danger', title: t('unavailableTitle') }, h('p', null, t('unavailableBody')), h('p', { className: 'tcr-mono' }, error)) : null,
-          snapshot.door?.phase === 'error'
-            ? h(Alert, { tone: 'danger', title: t('diagDoor') }, snapshot.door.lastError ?? t('unknown'))
-            : null,
-          tailcat.lastError && phase === 'error' && !binaryMissing
-            ? h(Alert, { tone: 'danger', title: t('diagLastError') }, h('p', { className: 'tcr-mono' }, tailcat.lastError))
-            : null,
-
-          !binaryMissing && systemFound && systemCompatible && !installer?.installed
-            ? h(
-                Alert,
-                { tone: 'info', title: t('installDetected') },
-                h('p', null, t('installDetectedBody', { version: system.version ?? t('unknown'), path: system.path })),
-              )
-            : null,
-
-          binaryMissing
-            ? h(
-                Card,
-                {
-                  title: systemFound && systemCompatible ? t('installDetected') : t('setupTitle'),
-                  subtitle: systemFound
-                    ? systemCompatible
-                      ? t('installDetectedBody', { version: system.version ?? t('unknown'), path: system.path })
-                      : t(installer?.method === 'brew' ? 'installSystemOutdatedBrew' : 'installSystemOutdated', { version: system.version ?? t('unknown') })
-                    : system?.status === 'checking' || !system
-                      ? t('installChecking')
-                      : t('setupBody'),
-                },
-                !systemFound
-                  ? h('p', { className: 'tcr-hint' }, t('installHint'))
-                  : null,
-                configOverride
-                  ? h(Alert, { tone: 'warn', title: t('setupTitle') }, t('installConfigOverride', { path: snapshot.config.binaryPath }))
-                  : null,
-                (!systemFound || !systemCompatible) && installer?.supported && !configOverride
-                  ? h(
-                      'p',
-                      { className: 'tcr-hint' },
-                      installer.method === 'brew'
-                        ? t('installMethodBrew', { command: installer.command })
-                        : t('installMethodDownload', { asset: installer.asset ?? 'tailcat' }),
-                    )
-                  : null,
-                !installer?.supported
-                  ? h(Alert, { tone: 'warn' }, t('installUnsupported', { platform: installer?.platform ?? 'unknown', arch: installer?.arch ?? 'unknown' }))
-                  : null,
-                installer?.error
-                  ? h(Alert, { tone: 'danger', title: t('installFailed') }, h('p', { className: 'tcr-mono' }, installer.error))
-                  : null,
-                installerBusy ? installProgress : null,
-                h(
-                  'div',
-                  { className: 'tcr-actions' },
-                  (!systemFound || !systemCompatible) && installer?.supported && !configOverride
-                    ? h(
-                        Button,
-                        {
-                          variant: 'primary',
-                          disabled: installerBusy,
-                          onClick: () => void act('install', {}, 'noticeInstalled'),
-                        },
-                        installerBusy ? t('installBusy') : installer?.installed ? t('installReinstall') : t('installButton'),
-                      )
-                    : null,
-                  h(
-                    Button,
-                    { variant: 'ghost', disabled: installerBusy, onClick: () => void act('restart', {}, 'noticeRestarted') },
-                    t('setupRetry'),
-                  ),
-                  installer?.manualUrl
-                    ? h(
-                        'a',
-                        {
-                          className: 'tcr-btn tcr-btn-ghost',
-                          href: installer.manualUrl,
-                          target: '_blank',
-                          rel: 'noopener noreferrer',
-                          style: { textDecoration: 'none' },
-                        },
-                        t('installManual'),
-                      )
-                    : null,
-                ),
-                installer?.installed && installer.binaryPath
-                  ? h('p', { className: 'tcr-hint' }, t('installManagedNote', { path: installer.binaryPath }))
-                  : null,
-              )
-            : null,
-
-          !pairing && !binaryMissing
-            ? h(
-                Card,
-                { title: t('statusLabel') },
-                h(
-                  'div',
-                  { className: 'tcr-grid' },
-                  h(Row, { label: t('diagPhase') }, t(PHASE_KEY[phase] ?? 'statusUnknown')),
-                  h(Row, { label: t('diagBinary') }, h('span', { className: 'tcr-mono' }, tailcat.binary?.resolved ?? snapshot.config.binaryPath)),
-                ),
-                phase === 'starting' || phase === 'restarting'
-                  ? h(Alert, { tone: 'warn' }, h('div', { className: 'tcr-hint', style: { marginTop: 0 } }, h('span', { className: 'tcr-spinner', style: { display: 'inline-block', verticalAlign: 'middle', marginRight: 8 } }), t('firstRun')))
-                  : h('p', { className: 'tcr-hint' }, h(Button, { variant: 'primary', disabled: Boolean(busy), onClick: () => void act('start', {}, 'noticeStarted') }, t('start'))),
-              )
-            : null,
-
-          pairing
-            ? h(
-                Card,
-                {
-                  title: t('pairingTitle'),
-                  subtitle: t('pairingHint'),
-                  actions: h('span', { className: 'tcr-badge' }, tailcat.keyMode === 'ephemeral' ? t('modeEphemeral') : t('modeStable')),
-                },
-                h('label', { className: 'tcr-label' }, t('addressLabel')),
-                h(
-                  'div',
-                  { className: 'tcr-code' },
-                  h('span', { className: 'tcr-code-text tcr-address' }, showAddress ? pairing.address : '****'),
-                  h('div', { style: { display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' } },
-                    h(CopyButton, { text: pairing.address, t, onResult: reportCopy }),
-                    h(Button, { variant: 'ghost', onClick: () => setShowAddress((value) => !value), 'aria-pressed': showAddress }, showAddress ? t('hideAddress') : t('showAddress')),
-                    h(
-                      Button,
-                      {
-                        variant: showQr ? 'ghost' : 'primary',
-                        className: 'tcr-qr-toggle',
-                        onClick: () => setShowQr((value) => !value),
-                        'aria-pressed': showQr,
-                      },
-                      showQr ? t('hideQr') : t('showQr'),
-                    ),
-                  ),
-                ),
-                !showAddress ? h('p', { className: 'tcr-hint' }, t('addressHiddenHint')) : null,
-                showQr
-                  ? h('div', { className: 'tcr-qr-wrap' },
-                      pairing.qr
-                        ? h(QrCode, { matrix: pairing.qr, t })
-                        : h('p', { className: 'tcr-hint', style: { marginTop: 0 } }, t('qrUnavailable')),
-                      h('div', { className: 'tcr-hint', style: { marginTop: 0 } }, t('qrHint')),
-                    )
-                  : null,
-                h('label', { className: 'tcr-label', style: { marginTop: 16 } }, t('openLocal')),
-                h(
-                  'div',
-                  { className: 'tcr-code' },
-                  h('span', { className: 'tcr-code-text' }, localUrl),
-                  h(CopyButton, { text: localUrl, t, onResult: reportCopy }),
-                  h(
-                    'a',
-                    { className: 'tcr-btn tcr-btn-ghost', href: localUrl, target: '_blank', rel: 'noopener noreferrer', style: { textDecoration: 'none' } },
-                    t('openLocal'),
-                  ),
-                ),
-                h('p', { className: 'tcr-hint' }, t('localUrlHint')),
-              )
-            : null,
-
           h(
-            Card,
-            { title: t('securityTitle') },
-            snapshot.devices.enforced
-              ? h(Alert, { tone: 'info', title: t('allowOnTitle', { count: snapshot.devices.count }) }, t('allowOnBody'))
-              : h(Alert, { tone: 'danger', title: t('allowOffTitle') }, t('allowOffBody')),
-            h('label', { className: 'tcr-label', style: { marginTop: 16 } }, t('devicesLabel')),
-            h('textarea', {
-              className: 'tcr-textarea',
-              value: draft,
-              placeholder: t('devicesPlaceholder'),
-              spellCheck: false,
-              onChange: (event) => {
-                setDraft(event.target.value);
-                setDevicesDirty(true);
-              },
-            }),
-            h('p', { className: 'tcr-hint' }, t('devicesHint')),
-            h('p', { className: 'tcr-hint' }, t('devicesGenerate'), h('code', { className: 'tcr-mono' }, ' tailcat genkey --client --key=client-default')),
-            h(
+            Button,
+            { disabled: anyBusy, onClick: () => void act('restart', {}, 'noticeRestarted') },
+            t('restart'),
+          ),
+          h(Button, { variant: 'ghost', disabled: anyBusy, onClick: () => void reload() }, t('refresh')),
+        ),
+
+        displayedNotice
+          ? h(
               'div',
-              { className: 'tcr-actions' },
-              h(Button, { variant: 'primary', disabled: saveBusy || !devicesDirty, onClick: () => void saveDevices() }, saveBusy ? t('busySave') : t('devicesSave')),
-              h(Button, { variant: 'ghost', disabled: saveBusy || !devicesDirty, onClick: () => { setDevicesDirty(false); setDraft((snapshot.devices.allow ?? []).join('\n')); } }, t('devicesReset')),
-            ),
-            snapshot.devices.warnings?.length
-              ? h('ul', { className: 'tcr-warning-list' }, snapshot.devices.warnings.map((warning, index) => h('li', { key: index }, warning)))
-              : null,
-            h('div', { style: { marginTop: 20, paddingTop: 16, borderTop: '1px dashed var(--dsw-alias-border-l3)' } },
-              h('p', { className: 'tcr-card-title', style: { fontSize: 14 } }, t('rotate')),
-              h('p', { className: 'tcr-hint' }, t('rotateHint')),
+              { className: `tcr-notice ${displayedNotice.kind === 'ok' ? 'tcr-notice-ok' : 'tcr-notice-error'}`, role: 'status' },
+              displayedNotice.key ? t(displayedNotice.key) : displayedNotice.text,
+            )
+          : null,
+        busyKey
+          ? h(
+              'div',
+              { className: 'tcr-hint' },
+              h('span', { className: 'tcr-spinner', style: { display: 'inline-block', verticalAlign: 'middle', marginRight: 8 } }),
+              t(busyKey),
+            )
+          : null,
+
+        error ? h(Alert, { tone: 'danger', title: t('unavailableTitle') }, h('p', null, t('unavailableBody')), h('p', { className: 'tcr-mono' }, error)) : null,
+        snapshot.door?.phase === 'error'
+          ? h(Alert, { tone: 'danger', title: t('diagDoor') }, snapshot.door.lastError ?? t('unknown'))
+          : null,
+        tailcat.lastError && phase === 'error' && !binaryMissing
+          ? h(Alert, { tone: 'danger', title: t('diagLastError') }, h('p', { className: 'tcr-mono' }, tailcat.lastError))
+          : null,
+
+        !binaryMissing && systemFound && systemCompatible && !installer?.installed
+          ? h(
+              Alert,
+              { tone: 'info', title: t('installDetected') },
+              h('p', null, t('installDetectedBody', { version: system.version ?? t('unknown'), path: system.path })),
+            )
+          : null,
+
+        binaryMissing
+          ? h(
+              Card,
+              {
+                title: systemFound && systemCompatible ? t('installDetected') : t('setupTitle'),
+                subtitle: systemFound
+                  ? systemCompatible
+                    ? t('installDetectedBody', { version: system.version ?? t('unknown'), path: system.path })
+                    : t(installer?.method === 'brew' ? 'installSystemOutdatedBrew' : 'installSystemOutdated', { version: system.version ?? t('unknown') })
+                  : system?.status === 'checking' || !system
+                    ? t('installChecking')
+                    : t('setupBody'),
+              },
+              !systemFound
+                ? h('p', { className: 'tcr-hint' }, t('installHint'))
+                : null,
+              configOverride
+                ? h(Alert, { tone: 'warn', title: t('setupTitle') }, t('installConfigOverride', { path: snapshot.config.binaryPath }))
+                : null,
+              (!systemFound || !systemCompatible) && installer?.supported && !configOverride
+                ? h(
+                    'p',
+                    { className: 'tcr-hint' },
+                    installer.method === 'brew'
+                      ? t('installMethodBrew', { command: installer.command })
+                      : t('installMethodDownload', { asset: installer.asset ?? 'tailcat' }),
+                  )
+                : null,
+              !installer?.supported
+                ? h(Alert, { tone: 'warn' }, t('installUnsupported', { platform: installer?.platform ?? 'unknown', arch: installer?.arch ?? 'unknown' }))
+                : null,
+              installer?.error
+                ? h(Alert, { tone: 'danger', title: t('installFailed') }, h('p', { className: 'tcr-mono' }, installer.error))
+                : null,
+              installerBusy ? installProgress : null,
               h(
                 'div',
                 { className: 'tcr-actions' },
-                rotateArmed
-                  ? h(Button, { variant: 'danger', disabled: Boolean(busy), onClick: () => void rotate() }, t('rotateConfirm'))
-                  : h(Button, { variant: 'danger', disabled: Boolean(busy), onClick: () => setRotateArmed(true) }, t('rotate')),
-                rotateArmed
-                  ? h(Button, { variant: 'ghost', disabled: Boolean(busy), onClick: () => setRotateArmed(false) }, t('cancel'))
+                (!systemFound || !systemCompatible) && installer?.supported && !configOverride
+                  ? h(
+                      Button,
+                      {
+                        variant: 'primary',
+                        disabled: installerBusy,
+                        onClick: () => void act('install', {}, 'noticeInstalled'),
+                      },
+                      installerBusy ? t('installBusy') : installer?.installed ? t('installReinstall') : t('installButton'),
+                    )
+                  : null,
+                h(
+                  Button,
+                  { variant: 'ghost', disabled: installerBusy, onClick: () => void act('restart', {}, 'noticeRestarted') },
+                  t('setupRetry'),
+                ),
+                installer?.manualUrl
+                  ? h(
+                      'a',
+                      {
+                        className: 'tcr-btn tcr-btn-ghost',
+                        href: installer.manualUrl,
+                        target: '_blank',
+                        rel: 'noopener noreferrer',
+                        style: { textDecoration: 'none' },
+                      },
+                      t('installManual'),
+                    )
                   : null,
               ),
-              h('p', { className: 'tcr-hint' }, t('rotateCaveat')),
-              h('p', { className: 'tcr-hint' }, t('rotateDisconnect')),
-            ),
-          ),
+              installer?.installed && installer.binaryPath
+                ? h('p', { className: 'tcr-hint' }, t('installManagedNote', { path: installer.binaryPath }))
+                : null,
+            )
+          : null,
 
-          h(
-            Card,
-            { title: t('diagnosticsTitle') },
-            h(
-              'div',
-              { className: 'tcr-grid' },
-              h(Row, { label: t('diagSurface') }, surfaceLabel),
-              h(Row, { label: t('diagPhase') }, t(PHASE_KEY[phase] ?? 'statusUnknown')),
-              h(Row, { label: t('diagAddressMode') }, tailcat.addressMode === 'ephemeral' ? t('modeEphemeral') : t('modeStable')),
-              h(Row, { label: t('diagKeyName') }, h('span', { className: 'tcr-mono' }, tailcat.keyName)),
-              h(Row, { label: t('diagVersion') }, tailcat.binary?.version ?? t('unknown')),
-              h(Row, { label: t('diagBinary') }, h('span', { className: 'tcr-mono' }, tailcat.binary?.resolved ?? snapshot.config.binaryPath)),
-              h(Row, { label: t('diagBinarySource') }, sourceLabel),
-              h(Row, { label: t('diagInstallSource') }, installer?.installed ? `${t('sourceManaged')} · ${installer.installedVersion ?? t('unknown')}` : systemFound ? `${t('sourcePath')} · ${system.version ?? t('unknown')}` : t('sourceUnavailable')),
-              h(Row, { label: t('diagRegion') }, tailcat.region ? `${tailcat.region.name} (${tailcat.region.id})` : t('unknown')),
-              h(Row, { label: t('diagRestarts') }, String(tailcat.restarts ?? 0)),
-              h(Row, { label: t('diagDoor') }, snapshot.door.mode === 'socket' ? `${t('modeSocket')} · ${snapshot.door.socketPath}` : `${t('modeTcp')} · 127.0.0.1:${snapshot.door.port}`),
-              h(Row, { label: t('diagTarget') }, snapshot.door.target ? `${snapshot.door.target.host}:${snapshot.door.target.port}` : t('unknown')),
-              h(Row, { label: t('diagLastError') }, tailcat.lastError ?? t('never')),
-            ),
-            tailcat.warnings?.length
-              ? h('ul', { className: 'tcr-warning-list' }, tailcat.warnings.map((warning, index) => h('li', { key: index }, warning)))
-              : null,
-          ),
+        !pairing && !binaryMissing
+          ? h(
+              Card,
+              { title: t('statusLabel') },
+              h(
+                'div',
+                { className: 'tcr-grid' },
+                h(Row, { label: t('diagPhase') }, t(PHASE_KEY[phase] ?? 'statusUnknown')),
+                h(Row, { label: t('diagBinary') }, h('span', { className: 'tcr-mono' }, tailcat.binary?.resolved ?? snapshot.config.binaryPath)),
+              ),
+              phase === 'starting' || phase === 'restarting'
+                ? h(Alert, { tone: 'warn' }, h('div', { className: 'tcr-hint', style: { marginTop: 0 } }, h('span', { className: 'tcr-spinner', style: { display: 'inline-block', verticalAlign: 'middle', marginRight: 8 } }), t('firstRun')))
+                : h('p', { className: 'tcr-hint' }, h(Button, { variant: 'primary', disabled: Boolean(busy), onClick: () => void act('start', {}, 'noticeStarted') }, t('start'))),
+            )
+          : null,
 
-          h(
-            Card,
-            { title: t('recentTitle') },
-            tailcat.recent?.length
-              ? h(
-                  'div',
-                  { className: 'tcr-recent' },
+        pairing
+          ? h(
+              Card,
+              {
+                title: t('pairingTitle'),
+                subtitle: t('pairingHint'),
+                actions: h('span', { className: 'tcr-badge' }, tailcat.keyMode === 'ephemeral' ? t('modeEphemeral') : t('modeStable')),
+              },
+              h('label', { className: 'tcr-label' }, t('addressLabel')),
+              h(
+                'div',
+                { className: 'tcr-code' },
+                h('span', { className: 'tcr-code-text tcr-address' }, showAddress ? pairing.address : '****'),
+                h('div', { style: { display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' } },
+                  h(CopyButton, { text: pairing.address, t, onResult: reportCopy }),
+                  h(Button, { variant: 'ghost', onClick: () => setShowAddress((value) => !value), 'aria-pressed': showAddress }, showAddress ? t('hideAddress') : t('showAddress')),
                   h(
-                    'div',
-                    { className: 'tcr-recent-row tcr-recent-head' },
-                    h('span', null, t('recentPeer')),
-                    h('span', null, t('recentPort')),
-                    h('span', null, t('recentVia')),
-                    h('span', null, t('recentDuration')),
-                    h('span', null, t('recentTime')),
+                    Button,
+                    {
+                      variant: showQr ? 'ghost' : 'primary',
+                      className: 'tcr-qr-toggle',
+                      onClick: () => setShowQr((value) => !value),
+                      'aria-pressed': showQr,
+                    },
+                    showQr ? t('hideQr') : t('showQr'),
                   ),
-                  ...tailcat.recent.slice(0, 8).map((entry, index) =>
-                    h(
-                      'div',
-                      { className: 'tcr-recent-row', key: `${entry.at}-${index}` },
-                      h('span', { className: 'tcr-mono', title: entry.peer ?? entry.reason ?? '' }, entry.peer ?? t('unknown')),
-                      h('span', null, entry.port ?? '—'),
-                      h('span', null, entry.via ?? entry.reason ?? '—'),
-                      h('span', null, formatDuration(entry.durationMs)),
-                      h('span', { title: entry.at }, formatTime(entry.at)),
-                    ),
-                  ),
-                )
-              : h('div', { className: 'tcr-empty' }, t('recentEmpty')),
-          ),
+                ),
+              ),
+              !showAddress ? h('p', { className: 'tcr-hint' }, t('addressHiddenHint')) : null,
+              showQr
+                ? h('div', { className: 'tcr-qr-wrap' },
+                    pairing.qr
+                      ? h(QrCode, { matrix: pairing.qr, t })
+                      : h('p', { className: 'tcr-hint', style: { marginTop: 0 } }, t('qrUnavailable')),
+                    h('div', { className: 'tcr-hint', style: { marginTop: 0 } }, t('qrHint')),
+                  )
+                : null,
+              h('label', { className: 'tcr-label', style: { marginTop: 16 } }, t('openLocal')),
+              h(
+                'div',
+                { className: 'tcr-code' },
+                h('span', { className: 'tcr-code-text' }, localUrl),
+                h(CopyButton, { text: localUrl, t, onResult: reportCopy }),
+                h(
+                  'a',
+                  { className: 'tcr-btn tcr-btn-ghost', href: localUrl, target: '_blank', rel: 'noopener noreferrer', style: { textDecoration: 'none' } },
+                  t('openLocal'),
+                ),
+              ),
+              h('p', { className: 'tcr-hint' }, t('localUrlHint')),
+            )
+          : null,
 
+        h(
+          Card,
+          { title: t('securityTitle') },
+          snapshot.devices.enforced
+            ? h(Alert, { tone: 'info', title: t('allowOnTitle', { count: snapshot.devices.count }) }, t('allowOnBody'))
+            : h(Alert, { tone: 'danger', title: t('allowOffTitle') }, t('allowOffBody')),
+          h('label', { className: 'tcr-label', style: { marginTop: 16 } }, t('devicesLabel')),
+          h('textarea', {
+            className: 'tcr-textarea',
+            value: draft,
+            placeholder: t('devicesPlaceholder'),
+            spellCheck: false,
+            onChange: (event) => {
+              setDraft(event.target.value);
+              setDevicesDirty(true);
+            },
+          }),
+          h('p', { className: 'tcr-hint' }, t('devicesHint')),
+          h('p', { className: 'tcr-hint' }, t('devicesGenerate'), h('code', { className: 'tcr-mono' }, ' tailcat genkey --client --key=client-default')),
           h(
             'div',
-            { className: 'tcr-footer' },
-            h('span', null, `${install} · v${snapshot.plugin.version}`),
-            h('span', null, t('footerNote')),
+            { className: 'tcr-actions' },
+            h(Button, { variant: 'primary', disabled: saveBusy || !devicesDirty, onClick: () => void saveDevices() }, saveBusy ? t('busySave') : t('devicesSave')),
+            h(Button, { variant: 'ghost', disabled: saveBusy || !devicesDirty, onClick: () => { setDevicesDirty(false); setDraft((snapshot.devices.allow ?? []).join('\n')); } }, t('devicesReset')),
           ),
+          snapshot.devices.warnings?.length
+            ? h('ul', { className: 'tcr-warning-list' }, snapshot.devices.warnings.map((warning, index) => h('li', { key: index }, warning)))
+            : null,
+          h('div', { style: { marginTop: 20, paddingTop: 16, borderTop: '1px dashed var(--dsw-alias-border-l3)' } },
+            h('p', { className: 'tcr-card-title', style: { fontSize: 14 } }, t('rotate')),
+            h('p', { className: 'tcr-hint' }, t('rotateHint')),
+            h(
+              'div',
+              { className: 'tcr-actions' },
+              rotateArmed
+                ? h(Button, { variant: 'danger', disabled: Boolean(busy), onClick: () => void rotate() }, t('rotateConfirm'))
+                : h(Button, { variant: 'danger', disabled: Boolean(busy), onClick: () => setRotateArmed(true) }, t('rotate')),
+              rotateArmed
+                ? h(Button, { variant: 'ghost', disabled: Boolean(busy), onClick: () => setRotateArmed(false) }, t('cancel'))
+                : null,
+            ),
+            h('p', { className: 'tcr-hint' }, t('rotateCaveat')),
+            h('p', { className: 'tcr-hint' }, t('rotateDisconnect')),
+          ),
+        ),
+
+        h(
+          Disclosure,
+          { title: t('diagnosticsTitle') },
+          h(
+            'div',
+            { className: 'tcr-grid' },
+            h(Row, { label: t('diagSurface') }, surfaceLabel),
+            h(Row, { label: t('diagPhase') }, t(PHASE_KEY[phase] ?? 'statusUnknown')),
+            h(Row, { label: t('diagAddressMode') }, tailcat.addressMode === 'ephemeral' ? t('modeEphemeral') : t('modeStable')),
+            h(Row, { label: t('diagKeyName') }, h('span', { className: 'tcr-mono' }, tailcat.keyName)),
+            h(Row, { label: t('diagVersion') }, tailcat.binary?.version ?? t('unknown')),
+            h(Row, { label: t('diagBinary') }, h('span', { className: 'tcr-mono' }, tailcat.binary?.resolved ?? snapshot.config.binaryPath)),
+            h(Row, { label: t('diagBinarySource') }, sourceLabel),
+            h(Row, { label: t('diagInstallSource') }, installer?.installed ? `${t('sourceManaged')} · ${installer.installedVersion ?? t('unknown')}` : systemFound ? `${t('sourcePath')} · ${system.version ?? t('unknown')}` : t('sourceUnavailable')),
+            h(Row, { label: t('diagRegion') }, tailcat.region ? `${tailcat.region.name} (${tailcat.region.id})` : t('unknown')),
+            h(Row, { label: t('diagRestarts') }, String(tailcat.restarts ?? 0)),
+            h(Row, { label: t('diagDoor') }, snapshot.door.mode === 'socket' ? `${t('modeSocket')} · ${snapshot.door.socketPath}` : `${t('modeTcp')} · 127.0.0.1:${snapshot.door.port}`),
+            h(Row, { label: t('diagTarget') }, snapshot.door.target ? `${snapshot.door.target.host}:${snapshot.door.target.port}` : t('unknown')),
+            h(Row, { label: t('diagLastError') }, tailcat.lastError ?? t('never')),
+          ),
+          tailcat.warnings?.length
+            ? h('ul', { className: 'tcr-warning-list' }, tailcat.warnings.map((warning, index) => h('li', { key: index }, warning)))
+            : null,
+        ),
+
+        h(
+          Disclosure,
+          { title: t('recentTitle') },
+          tailcat.recent?.length
+            ? h(
+                'div',
+                { className: 'tcr-recent' },
+                h(
+                  'div',
+                  { className: 'tcr-recent-row tcr-recent-head' },
+                  h('span', null, t('recentPeer')),
+                  h('span', null, t('recentPort')),
+                  h('span', null, t('recentVia')),
+                  h('span', null, t('recentDuration')),
+                  h('span', null, t('recentTime')),
+                ),
+                ...tailcat.recent.slice(0, 8).map((entry, index) =>
+                  h(
+                    'div',
+                    { className: 'tcr-recent-row', key: `${entry.at}-${index}` },
+                    h('span', { className: 'tcr-mono', title: entry.peer ?? entry.reason ?? '' }, entry.peer ?? t('unknown')),
+                    h('span', null, entry.port ?? '—'),
+                    h('span', null, entry.via ?? entry.reason ?? '—'),
+                    h('span', null, formatDuration(entry.durationMs)),
+                    h('span', { title: entry.at }, formatTime(entry.at)),
+                  ),
+                ),
+              )
+            : h('div', { className: 'tcr-empty' }, t('recentEmpty')),
+        ),
+
+        h(
+          'div',
+          { className: 'tcr-footer' },
+          h('span', null, `${install} · v${snapshot.plugin.version}`),
+          h('span', null, t('footerNote')),
         ),
       );
     }
@@ -1407,32 +1420,32 @@ window.__ModuleLoader__.load({
         ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'tailcat-remote: dictionaries');
         ctx.effect(
           () =>
-            ctx.slots.inject('sidebar.panellist', () =>
+            ctx.slots.inject('settings.section', () =>
               ctx.slots.register(
                 {
-                  name: 'sidebar.panellist',
+                  name: 'settings.section',
                   id: 'tailcat-remote',
                   order: 30,
                   label: () => translate(t, 'nav'),
+                  locale: NS,
+                },
+                RemoteSection,
+              ),
+            ),
+          'tailcat-remote: settings section',
+        );
+        ctx.effect(
+          () =>
+            ctx.slots.inject('settings.section.icon', () =>
+              ctx.slots.register(
+                {
+                  name: 'settings.section.icon',
+                  id: 'tailcat-remote',
                 },
                 PanelIcon,
               ),
             ),
-          'tailcat-remote: sidebar entry',
-        );
-        ctx.effect(
-          () =>
-            ctx.slots.inject('main', () =>
-              ctx.slots.register(
-                {
-                  name: 'main',
-                  key: 'tailcat-remote',
-                  locale: NS,
-                },
-                RemotePage,
-              ),
-            ),
-          'tailcat-remote: page',
+          'tailcat-remote: settings section icon',
         );
       },
     };

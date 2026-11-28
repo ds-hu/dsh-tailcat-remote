@@ -61,13 +61,13 @@ test('every locale document is valid JSON and carries the panel metadata', () =>
   }
 });
 
-test('the client bundle registers the sidebar entry and the keyed main page', () => {
+test('the client bundle registers the Settings section and no sidebar row', () => {
   const client = read('client.js');
   assert.match(client, /__ModuleLoader__\.load/);
   assert.match(client, /id: '@ds-hu\/dsh-tailcat-remote'/);
-  assert.match(client, /sidebar\.panellist/);
-  assert.match(client, /ctx\.slots\.inject\('main'/);
-  assert.match(client, /key: 'tailcat-remote'/);
+  assert.match(client, /settings\.section/);
+  assert.equal(client.includes('sidebar.panellist'), false, 'the page lives in Settings, not the sidebar');
+  assert.equal(client.includes("inject('main'"), false, 'the page owns no main-area key any more');
   assert.equal(client.includes('<div'), false, 'the client is plain React.createElement, not JSX');
 });
 

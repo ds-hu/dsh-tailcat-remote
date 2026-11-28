@@ -10,7 +10,7 @@
 2. 不开放公网端口，不改动入站防火墙；
 3. 用 tailcat 当唯一的传输层，浏览器最终访问的是客户端自己的 `127.0.0.1`。
 
-插件只做服务端：一个 Host 插件、一个侧边栏页面、一个配对页。客户端仍然使用 tailcat 自己的 `forward` 命令，本插件不包含客户端程序。
+插件只做服务端：一个 Host 插件、一个设置页、一个配对页。客户端仍然使用 tailcat 自己的 `forward` 命令，本插件不包含客户端程序。
 
 ## 为什么是这三个部件
 
@@ -140,9 +140,11 @@ sequenceDiagram
 
 `addressMode: ephemeral` 与 `autoStart` 同时开启时，每次 Host 重启地址都会变化；想用二维码长期配对就用 `stable`，需要换地址时在面板点“更换地址”。
 
-## 面板
+## 设置页
 
-侧边栏入口是一个 `sidebar.panellist` row，id 与 `main` 的 key 都是 `tailcat-remote`。页面注册在 `main`，使用 `locale: 'tailcat-remote'` 获得注入的 `t`。
+入口是 `settings.section` 里的一个 section：id `tailcat-remote`，`order: 30`（排在 Agent 预设之后），`locale: 'tailcat-remote'` 拿到注入的 `t`；导航图标是同 id 的 `settings.section.icon`。插件不再注册 `main`，也不再是 `sidebar.panellist` 的一行——页面只存在于设置里。
+
+设置面板的内容列拥有滚动和水平内边距，所以页面自己不设高度、不设 `overflow`，只描述这一列里的内容。面板宽 800，内容列约 560px，因此诊断网格是单列，**状态与诊断**和**最近连接**默认折叠，配对与安全两块保持在第一屏。
 
 页面只做显示与动作，不持有业务状态：
 

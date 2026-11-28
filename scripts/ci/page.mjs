@@ -3,13 +3,17 @@
  *
  * Both the README screenshot run and the desktop-profile browser check start
  * from a fresh profile: onboarding modals block the sidebar, and a first render
- * can precede the plugin's keyed main entry. These helpers own that choreography
- * so the two checks assert different things without drifting apart.
+ * can precede the plugin's client entry. These helpers own that choreography
+ * so the two checks assert different things without drifting apart. The panel
+ * lives in the Settings dialog, so every path here opens Settings first.
  */
 
 /** Labels the panel and the pairing card render in the zh-CN UI. */
 export const LABELS = {
+  newSession: '新会话',
+  settings: '设置',
   nav: '远程访问',
+  section: '状态与诊断',
   pairing: '配对这台 Harness',
   showAddress: '显示地址',
   hideAddress: '隐藏地址',
@@ -47,13 +51,41 @@ export async function dismissModals(page) {
 }
 
 /**
- * Select the sidebar entry and wait for the pairing card.
+ * Open the Settings dialog and wait for the remote-access section to be listed.
+ *
+ * The shell owns two ways in: the sidebar's bottom trigger and the
+ * `settings.open` command. The trigger is a plain Settings button when no
+ * account launcher replaced it, which is the case for the signed-out CI
+ * profiles; the keyboard path covers a launcher-owned seat. Local pages get
+ * the command as `Mod+Alt+,`; web builds only bind it on macOS and Windows, so
+ * the button is tried first.
+ */
+export async function openSettings(page) {
+  const trigger = page.getByRole('button', { name: LABELS.settings, exact: true }).first();
+  if ((await trigger.count()) > 0) {
+    await trigger.click({ force: true }).catch(() => {});
+  }
+  if ((await page.getByRole('button', { name: LABELS.nav, exact: true }).count()) === 0) {
+    await page.keyboard.press('Control+Alt+,');
+  }
+  await page.getByRole('button', { name: LABELS.nav, exact: true }).first().waitFor({ timeout: 60_000 });
+}
+
+/**
+ * Open Settings and select the remote-access section, without assuming what it
+ * shows: the install-card run lands on the same section with no pairing card.
+ */
+export async function openRemoteSection(page) {
+  await openSettings(page);
+  await page.getByRole('button', { name: LABELS.nav, exact: true }).first().click();
+}
+
+/**
+ * Open the remote-access section and wait for the pairing card.
  * @returns whether the pairing card appeared.
  */
 export async function openRemotePage(page) {
-  const sidebar = page.getByRole('button', { name: LABELS.nav, exact: true }).first();
-  await sidebar.waitFor({ timeout: 60_000 });
-  await sidebar.click();
+  await openRemoteSection(page);
   try {
     await page.getByText(LABELS.pairing, { exact: true }).waitFor({ timeout: 6_000 });
     return true;
@@ -63,13 +95,13 @@ export async function openRemotePage(page) {
 }
 
 /**
- * Open the remote-access panel from a freshly loaded page, retrying once after
+ * Open the remote-access section from a freshly loaded page, retrying once after
  * a reload because a fresh profile can render the shell before the plugin's
- * keyed main entry is visible to the layout.
+ * section is visible to the settings navigation.
  * @param page - Playwright page already navigated to the Harness.
  */
 export async function enterRemotePage(page) {
-  await page.getByText(LABELS.nav, { exact: true }).first().waitFor({ timeout: 60_000 });
+  await page.getByRole('button', { name: LABELS.newSession, exact: true }).first().waitFor({ timeout: 60_000 });
   await dismissModals(page);
   let opened = await openRemotePage(page);
   if (!opened) {
@@ -80,10 +112,20 @@ export async function enterRemotePage(page) {
   }
   if (!opened) {
     const current = await page
-      .locator('[aria-current="page"]')
-      .evaluateAll((nodes) => nodes.map((node) => node.getAttribute('aria-label')));
-    throw new Error(`the remote-access panel did not open; current pages: ${JSON.stringify(current)}`);
+      .locator('[aria-current="true"]')
+      .evaluateAll((nodes) => nodes.map((node) => node.textContent));
+    throw new Error(`the remote-access section did not open; current sections: ${JSON.stringify(current)}`);
   }
+}
+
+/**
+ * Expand the folded diagnostics block so its rows are visible and readable.
+ * @param page - Playwright page already showing the remote-access section.
+ */
+export async function openDiagnostics(page) {
+  const block = page.locator('details.tcr-disclosure').filter({ hasText: LABELS.section }).first();
+  await block.locator('summary').click();
+  await block.locator('.tcr-grid').first().waitFor({ timeout: 10_000 });
 }
 
 /** Assert the address starts masked, reveals on demand, and hides again. */

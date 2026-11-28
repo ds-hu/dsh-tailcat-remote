@@ -34,7 +34,7 @@ Remote Access folds that into one plugin. The Host supervises a `tailcat` proces
 - **Scan or copy to pair.** The address is masked as `****` until you choose **Show address**; Copy always copies the full value, and the QR code is opt-in.
 - **The pairing page stays compact.** It shows the address, QR code, and local URL only; the client command and step list are no longer rendered. See **Use** below for the command example.
 - **A key allow-list.** The address is the only credential by default. Add client public keys and unauthorized devices are refused during the tailcat handshake.
-- **Rotate the address, manage the process.** Start, stop, restart, and rotate from the sidebar; inspect the relay region, recent connections, refusals, and errors.
+- **Rotate the address, manage the process.** Start, stop, restart, and rotate in **Settings → Remote Access**; inspect the relay region, recent connections, refusals, and errors.
 - **Log in once.** The first remote visit runs the normal DSH login flow and then keeps an HttpOnly cookie. The token never appears in the remote URL.
 - **The same page locally and remotely.** The panel works through DSH's owner API, so both views behave alike.
 
@@ -91,7 +91,7 @@ The desktop application runs a profile named `desktop` (`$DSH_HOME/profiles/desk
      Then run `pnpm install` inside `%USERPROFILE%\.dsh\profiles\desktop` and start the application again.
 
      An npm-installed `dsh` refuses `--profile desktop`. The command the desktop application can install accepts that profile, but it only runs pnpm: it does **not** add the package to `dsh.profile.bundles`, so the manual path has to add that entry itself.
-3. Open **Remote Access** in the sidebar, install tailcat and show the address as below, then run `tailcat forward` on the client.
+3. Open **Settings → Remote Access**, install tailcat and show the address as below, then run `tailcat forward` on the client.
 
 <p align="center">
   <img src="docs/screenshots/04-desktop.png" alt="The panel on the desktop profile: the Desktop badge and tray note beside the title, with the pairing card served over the tailcat tunnel" width="820">
@@ -106,7 +106,7 @@ The desktop application runs a profile named `desktop` (`$DSH_HOME/profiles/desk
 
 ### tailcat installation is managed
 
-Restart `dsh web` and open **Remote Access**. If the Host has no tailcat, the page shows an install card:
+Restart `dsh web` and open **Settings → Remote Access**. If the Host has no tailcat, the page shows an install card:
 
 - **Linux / Windows:** click **Install tailcat**. The plugin selects the official tailcat v0.8.0 asset for `process.arch`, downloads it, verifies its SHA-256 against the official `checksums.txt`, and extracts it to `$DSH_HOME/tailcat-remote/bin/`. The system `PATH` is not modified.
 - **macOS:** if Homebrew is available, the same button updates Homebrew and installs/upgrades tailcat (0.8.0 or newer), then copies the executable into the managed directory. Intel Macs have no bottle, so Homebrew builds from source and can take several minutes. Without Homebrew, the page shows a clear message and a manual-install link.
@@ -123,7 +123,7 @@ The managed install only runs after you click the button: there is no background
 
 ## Use
 
-1. Restart Harness and open **Remote Access** in the sidebar.
+1. Restart Harness and open **Settings → Remote Access**.
 2. If the page reports a missing tailcat, click **Install tailcat** first; otherwise wait for **Online** and the address (masked by default; choose **Show address** to reveal it). The first start creates a saved key and probes a DERP region, which can take a minute.
 3. On the client device, install tailcat, copy the address from the page or scan the QR code, then run:
 

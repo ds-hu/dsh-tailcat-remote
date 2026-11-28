@@ -34,7 +34,7 @@ DeepSeek Harness 默认只在本机监听。想从笔记本、手机或另一台
 - **扫码或复制即可配对。** 地址默认遮罩为 `****`，点“显示地址”才展开；复制按钮始终复制完整值，二维码按需显示。
 - **配对页保持精简。** 只保留地址、二维码和本地地址，不再渲染客户端命令与使用步骤；命令示例见下方“使用”。
 - **白名单限制谁能连。** 默认只有地址这一把钥匙；添加客户端公钥后，未授权设备在 tailcat 握手阶段就被拒绝。
-- **地址可换，进程可管。** 侧边栏里启动、停止、重启、轮换地址，查看中继区域、最近连接、拒绝记录和错误信息。
+- **地址可换，进程可管。** 在 **设置 → 远程访问** 里启动、停止、重启、轮换地址，查看中继区域、最近连接、拒绝记录和错误信息。
 - **登录仍然只有一次。** 第一次打开远程地址会走正常的 DSH 登录流程，之后浏览器沿用 HttpOnly cookie；token 不会出现在远程 URL 里。
 - **本机与远程同一页。** 页面本身通过 DSH 的 owner API 工作，在本机操作和远程操作一致。
 
@@ -91,7 +91,7 @@ dsh plugin --profile web add @ds-hu/dsh-tailcat-remote
      然后在 `%USERPROFILE%\.dsh\profiles\desktop` 里运行 `pnpm install`，再打开桌面版。
 
      用 npm 全局安装的 `dsh` 会拒绝 `--profile desktop`；桌面版自带的 `dsh` 命令（如果在应用里安装过）允许这个 profile，但它只做 pnpm 安装，**不会**把包写进 `dsh.profile.bundles`，所以手动路径要自己补上这一项。
-3. 侧边栏打开 **远程访问**，按下面的步骤安装 tailcat、出示地址；客户端 `tailcat forward` 后即可访问。
+3. 打开 **设置 → 远程访问**，按下面的步骤安装 tailcat、出示地址；客户端 `tailcat forward` 后即可访问。
 
 <p align="center">
   <img src="docs/screenshots/04-desktop.png" alt="桌面版面板：标题旁的「桌面版」徽标与托盘说明，以及通过 tailcat 隧道访问时的配对卡片" width="820">
@@ -106,7 +106,7 @@ dsh plugin --profile web add @ds-hu/dsh-tailcat-remote
 
 ### tailcat 会自动安装
 
-重启 `dsh web` 后打开 **远程访问**。如果 Host 还没有 tailcat，页面会显示安装卡片：
+重启 `dsh web` 后打开 **设置 → 远程访问**。如果 Host 还没有 tailcat，页面会显示安装卡片：
 
 - **Linux / Windows**：点 **一键安装 tailcat**。插件会按 `process.arch` 选择 tailcat 官方 v0.8.0 release 资产，下载后用官方 `checksums.txt` 校验 SHA-256，再解压到 `$DSH_HOME/tailcat-remote/bin/`。不修改系统 `PATH`。
 - **macOS**：如果 Host 有 Homebrew，点同一个按钮会先更新 Homebrew，再安装/升级 tailcat（需要 0.8.0 或更新），然后把可执行文件复制到受管目录。Intel Mac 没有现成 bottle，Homebrew 会从源码构建，可能比 Apple Silicon 慢几分钟。没有 Homebrew 时，页面会给出明确提示和手动安装链接。
@@ -123,7 +123,7 @@ dsh plugin --profile web add @ds-hu/dsh-tailcat-remote
 
 ## 使用
 
-1. 重启 Harness，侧边栏打开 **远程访问**。
+1. 重启 Harness，打开 **设置 → 远程访问**。
 2. 如果页面提示缺少 tailcat，先点 **一键安装 tailcat**；否则确认状态是 **运行中**，地址已经出现（默认遮罩，点“显示地址”查看）。首次启动要生成保存密钥并探测 DERP 区域，可能需要一分钟。
 3. 在要访问的客户端设备上安装 tailcat，复制页面上的地址或扫码取得地址，然后运行：
 
