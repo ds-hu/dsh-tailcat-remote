@@ -95,13 +95,25 @@ export async function openRemotePage(page) {
 }
 
 /**
+ * Wait for the app shell to render, whatever modal is on top of it.
+ *
+ * This is a text query on purpose. An onboarding modal puts the shell behind
+ * `inert`, which keeps it on screen but strips it from the accessibility tree,
+ * so a role query never resolves on a fresh profile.
+ * @param page - Playwright page already navigated to the Harness.
+ */
+export async function waitForShell(page) {
+  await page.getByText(LABELS.newSession, { exact: true }).first().waitFor({ timeout: 60_000 });
+}
+
+/**
  * Open the remote-access section from a freshly loaded page, retrying once after
  * a reload because a fresh profile can render the shell before the plugin's
  * section is visible to the settings navigation.
  * @param page - Playwright page already navigated to the Harness.
  */
 export async function enterRemotePage(page) {
-  await page.getByRole('button', { name: LABELS.newSession, exact: true }).first().waitFor({ timeout: 60_000 });
+  await waitForShell(page);
   await dismissModals(page);
   let opened = await openRemotePage(page);
   if (!opened) {

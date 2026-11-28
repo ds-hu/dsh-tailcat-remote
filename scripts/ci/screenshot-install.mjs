@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { chromium } from 'playwright';
-import { dismissModals, LABELS, openRemoteSection } from './page.mjs';
+import { dismissModals, openRemoteSection, waitForShell } from './page.mjs';
 
 const url = process.env.DSH_INSTALL_URL;
 if (!url) throw new Error('DSH_INSTALL_URL is required');
@@ -24,7 +24,7 @@ page.on('console', (message) => {
 page.on('pageerror', (error) => console.log('[pageerror]', error.message));
 
 await page.goto(url, { waitUntil: 'domcontentloaded' });
-await page.getByRole('button', { name: LABELS.newSession, exact: true }).first().waitFor({ timeout: 60_000 });
+await waitForShell(page);
 await dismissModals(page);
 await openRemoteSection(page);
 await page.getByText('一键安装 tailcat', { exact: true }).first().waitFor({ timeout: 30_000 });
