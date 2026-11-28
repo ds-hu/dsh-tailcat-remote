@@ -64,6 +64,22 @@ async function clickVisible(locator, timeout = 5_000) {
 }
 
 /**
+ * The Settings dialog root. The dialog is a modal with `role="dialog"`, and its
+ * section list is the only place the remote-access entry means "the section":
+ * the sidebar can carry a shortcut row with the same name, so every query here
+ * is scoped to the dialog instead of the page.
+ * @param page - Playwright page.
+ */
+export function settingsDialog(page) {
+  return page.locator('[data-shortcut-modal="settings"]');
+}
+
+/** The remote-access entry inside the Settings navigation. */
+export function settingsSection(page) {
+  return settingsDialog(page).getByRole('button', { name: LABELS.nav, exact: true }).first();
+}
+
+/**
  * Open the Settings dialog and wait for the remote-access section to be listed.
  *
  * There are three ways in, and which one exists depends on the composition:
@@ -80,14 +96,12 @@ async function clickVisible(locator, timeout = 5_000) {
  * menu item is matched by role first and by text second.
  */
 export async function openSettings(page) {
-  const section = page.getByRole('button', { name: LABELS.nav, exact: true }).first();
-  const listed = async () => (await section.count()) > 0;
-
-  if (!(await listed())) {
+  if ((await settingsDialog(page).count()) === 0) {
     await clickVisible(page.getByRole('button', { name: LABELS.settings, exact: true }));
+    await page.waitForTimeout(400);
   }
 
-  if (!(await listed())) {
+  if ((await settingsDialog(page).count()) === 0) {
     const launcher = page.getByRole('button', { name: LABELS.accountMenu, exact: true });
     if (await clickVisible(launcher)) {
       await page.waitForTimeout(300);
@@ -95,15 +109,16 @@ export async function openSettings(page) {
       if (!(await clickVisible(item))) {
         await clickVisible(page.getByText(LABELS.settings, { exact: true }));
       }
-      await page.waitForTimeout(300);
+      await page.waitForTimeout(400);
     }
   }
 
-  if (!(await listed())) {
+  if ((await settingsDialog(page).count()) === 0) {
     await page.keyboard.press('Control+Alt+,');
+    await page.waitForTimeout(400);
   }
 
-  await section.waitFor({ timeout: 60_000 });
+  await settingsSection(page).waitFor({ timeout: 60_000 });
 }
 
 /**
@@ -112,7 +127,7 @@ export async function openSettings(page) {
  */
 export async function openRemoteSection(page) {
   await openSettings(page);
-  await page.getByRole('button', { name: LABELS.nav, exact: true }).first().click();
+  await settingsSection(page).click();
 }
 
 /**
@@ -166,18 +181,38 @@ export async function enterRemotePage(page) {
 }
 
 /**
+ * Leave Settings and open the same page through its optional sidebar row.
+ *
+ * This is the path the `sidebarEntry` switch adds: a main-area panel keyed by
+ * the section id. The dialog must be gone first, or the row sits behind a modal
+ * and both entries share an accessible name.
+ * @param page - Playwright page already showing the remote-access section.
+ */
+export async function openSidebarPage(page) {
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(600);
+  if ((await page.locator('.tcr-page').count()) === 0) {
+    const row = page.getByRole('button', { name: LABELS.nav, exact: true }).first();
+    await row.waitFor({ state: 'visible', timeout: 30_000 });
+    await row.click();
+  }
+  await page.locator('.tcr-page').first().waitFor({ timeout: 30_000 });
+  await page.locator('.tcr-page .tcr-section').first().waitFor({ timeout: 30_000 });
+}
+
+/**
  * Expand the folded diagnostics block so its rows are visible and readable.
  * @param page - Playwright page already showing the remote-access section.
  */
 export async function openDiagnostics(page) {
-  const block = page.locator('details.tcr-disclosure').filter({ hasText: LABELS.section }).first();
+  const block = settingsDialog(page).locator('details.tcr-disclosure').filter({ hasText: LABELS.section }).first();
   await block.locator('summary').click();
   await block.locator('.tcr-grid').first().waitFor({ timeout: 10_000 });
 }
 
 /** Assert the address starts masked, reveals on demand, and hides again. */
 export async function assertMaskedAddress(page) {
-  const address = page.locator('.tcr-address').first();
+  const address = settingsDialog(page).locator('.tcr-address').first();
   await address.waitFor({ timeout: 10_000 });
   if ((await address.innerText()).trim() !== '****') {
     throw new Error(`the pairing address must default to ****, got: ${await address.innerText()}`);

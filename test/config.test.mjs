@@ -17,6 +17,7 @@ test('Config defaults describe the safe common case', () => {
   assert.equal(config.maxRestartAttempts, 10);
   assert.equal(config.restartBaseDelayMs, 500);
   assert.equal(config.restartMaxDelayMs, 30_000);
+  assert.equal(config.sidebarEntry, true, 'the sidebar shortcut is on unless the user turns it off');
 });
 
 test('Config rejects an unknown listen mode and an impossible port', () => {
@@ -38,6 +39,7 @@ test('resolveConfig repairs malformed rows instead of throwing', () => {
     autoStart: 'yes',
     logAccess: 0,
     restartEnabled: null,
+    sidebarEntry: 'yes',
   });
 
   assert.equal(config.binaryPath, 'tailcat');
@@ -51,6 +53,7 @@ test('resolveConfig repairs malformed rows instead of throwing', () => {
   assert.equal(config.autoStart, true);
   assert.equal(config.logAccess, true);
   assert.equal(config.restartEnabled, true);
+  assert.equal(config.sidebarEntry, true, 'a malformed switch falls back to on');
 });
 
 test('resolveConfig keeps the configured values that are valid', () => {
@@ -67,6 +70,7 @@ test('resolveConfig keeps the configured values that are valid', () => {
     maxRestartAttempts: 3,
     restartBaseDelayMs: 750,
     restartMaxDelayMs: 9_000,
+    sidebarEntry: false,
   });
 
   assert.deepEqual(config, {
@@ -83,6 +87,7 @@ test('resolveConfig keeps the configured values that are valid', () => {
     maxRestartAttempts: 3,
     restartBaseDelayMs: 750,
     restartMaxDelayMs: 9_000,
+    sidebarEntry: false,
   });
 });
 
@@ -98,6 +103,7 @@ test('configView never includes the DERP URL or key material', () => {
   );
 
   assert.equal(view.customDerpMap, true);
+  assert.equal(view.sidebarEntry, true, 'the client needs the switch to place the sidebar row');
   assert.equal(view.binaryPath, '/opt/tailcat');
   assert.equal(view.keyName, 'key-one');
   assert.equal('derpMapUrl' in view, false);

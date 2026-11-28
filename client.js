@@ -264,6 +264,8 @@ window.__ModuleLoader__.load({
       hideAddress: '隐藏地址',
       showQr: '显示二维码',
       hideQr: '隐藏二维码',
+      wireHarness: '本机 Harness',
+      wireClient: '客户端设备',
       pairingTitle: '配对这台 Harness',
       pairingHint: '把地址带到客户端设备，在那里运行 tailcat forward，然后用该设备的浏览器打开本地地址。',
       addressLabel: 'tailcat 地址',
@@ -399,6 +401,8 @@ window.__ModuleLoader__.load({
       hideAddress: 'Hide address',
       showQr: 'Show QR code',
       hideQr: 'Hide QR code',
+      wireHarness: 'This Harness',
+      wireClient: 'Client device',
       pairingTitle: 'Pair this Harness',
       pairingHint: 'Move the address to the client device, run tailcat forward there, then open the local URL in that device’s browser.',
       addressLabel: 'tailcat address',
@@ -515,13 +519,40 @@ window.__ModuleLoader__.load({
      * black on white.
      */
     const STYLE = `
-      .tcr-section { display: flex; flex-direction: column; gap: 14px; color: var(--dsw-alias-label-primary); }
-      .tcr-head { display: flex; flex-direction: column; gap: 4px; }
-      .tcr-title { margin: 0; font-size: 18px; line-height: 1.3; font-weight: 600; letter-spacing: -0.01em; }
+      /* A main-area slot hands the page the whole canvas, so the page owns the
+         scroll there; inside Settings this class is absent and the dialog keeps
+         owning it. */
+      .tcr-page { height: 100%; overflow-y: auto; overscroll-behavior: contain; box-sizing: border-box; padding: 30px clamp(16px, 3vw, 36px) 44px; background: var(--dsw-alias-bg-base); }
+      .tcr-page-inner { max-width: 820px; margin: 0 auto; }
+      .tcr-page .tcr-section { gap: 18px; }
+      .tcr-page .tcr-hero { padding: 20px 22px 16px; }
+      .tcr-page .tcr-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 30px; }
+      .tcr-section { display: flex; flex-direction: column; gap: 16px; color: var(--dsw-alias-label-primary); }
+      .tcr-head { display: flex; flex-direction: column; gap: 6px; }
+      .tcr-title { margin: 0; font-size: 19px; line-height: 1.3; font-weight: 600; letter-spacing: -0.01em; }
       .tcr-title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-      .tcr-subtitle { margin: 0; font-size: 13px; line-height: 1.6; color: var(--dsw-alias-label-tertiary); }
-      .tcr-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-      .tcr-card { background: var(--dsw-alias-bg-layer-1); border: 1px solid var(--dsw-alias-border-l3); border-radius: 14px; padding: 16px 18px; }
+      .tcr-mark { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; flex: 0 0 auto; border-radius: 9px; border: 1px solid var(--dsw-alias-border-l3); background: var(--dsw-alias-bg-layer-1); color: var(--dsw-alias-brand-primary); }
+      .tcr-subtitle { margin: 0; max-width: 66ch; font-size: 13px; line-height: 1.65; color: var(--dsw-alias-label-tertiary); }
+      .tcr-hero { position: relative; display: flex; flex-direction: column; gap: 12px; border: 1px solid var(--dsw-alias-border-l3); border-radius: 16px; padding: 16px 18px 14px; background: radial-gradient(130% 190% at 0% 0%, color-mix(in srgb, var(--dsw-alias-brand-primary) 7%, transparent), transparent 64%), var(--dsw-alias-bg-layer-1); }
+      .tcr-wire { --wire: var(--dsw-alias-state-idle-primary); display: flex; align-items: center; gap: 10px; min-width: 0; }
+      .tcr-wire[data-state="online"] { --wire: var(--dsw-alias-state-success-primary); }
+      .tcr-wire[data-state="pending"] { --wire: var(--dsw-alias-state-warn-primary); }
+      .tcr-wire[data-state="error"] { --wire: var(--dsw-alias-state-error-primary); }
+      .tcr-wire-label { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; line-height: 1; letter-spacing: .06em; text-transform: uppercase; color: var(--dsw-alias-label-tertiary); white-space: nowrap; }
+      .tcr-wire-label-end { justify-content: flex-end; }
+      .tcr-wire-dot { width: 6px; height: 6px; flex: 0 0 auto; border-radius: 50%; background: var(--wire); }
+      .tcr-wire-track { flex: 1 1 24px; height: 1px; min-width: 16px; background: repeating-linear-gradient(90deg, var(--wire) 0 3px, transparent 3px 8px); opacity: .7; }
+      .tcr-wire[data-state="online"] .tcr-wire-track { background: var(--wire); opacity: .45; }
+      .tcr-wire[data-state="pending"] .tcr-wire-track { animation: tcr-march .9s linear infinite; }
+      .tcr-wire-plate { display: inline-flex; align-items: center; gap: 7px; height: 26px; padding: 0 10px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--wire) 38%, var(--dsw-alias-border-l3)); background: var(--dsw-alias-bg-overlay); font-size: 12px; font-weight: 600; line-height: 1; color: var(--dsw-alias-label-secondary); white-space: nowrap; }
+      .tcr-wire[data-state="online"] .tcr-wire-plate { color: var(--dsw-alias-state-success-primary); }
+      .tcr-wire[data-state="pending"] .tcr-wire-plate { color: var(--dsw-alias-state-warn-primary); }
+      .tcr-wire[data-state="error"] .tcr-wire-plate { color: var(--dsw-alias-state-error-primary); }
+      .tcr-wire[data-state="online"] .tcr-wire-plate .tcr-wire-dot { animation: tcr-pulse 2.6s ease-in-out infinite; }
+      .tcr-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+      .tcr-chip { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 6px; border: 1px solid var(--dsw-alias-border-l3); background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-secondary); font-size: 11px; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+      .tcr-hero-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--dsw-alias-border-l3); }
+      .tcr-card { background: var(--dsw-alias-bg-layer-1); border: 1px solid var(--dsw-alias-border-l3); border-radius: 16px; padding: 17px 19px; }
       .tcr-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
       .tcr-card-title { margin: 0; font-size: 15px; line-height: 1.4; font-weight: 600; }
       .tcr-card-sub { margin: 4px 0 0; font-size: 12.5px; line-height: 1.55; color: var(--dsw-alias-label-secondary); }
@@ -536,21 +567,15 @@ window.__ModuleLoader__.load({
       .tcr-btn-danger:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover-danger); }
       .tcr-btn-ghost { background: transparent; border-color: transparent; color: var(--dsw-alias-label-secondary); }
       .tcr-btn-ghost:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); }
-      .tcr-pill { display: inline-flex; align-items: center; gap: 7px; height: 28px; padding: 0 10px; border-radius: 999px; background: var(--dsw-alias-bg-layer-2); border: 1px solid var(--dsw-alias-border-l3); font-size: 12.5px; color: var(--dsw-alias-label-secondary); }
-      .tcr-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--dsw-alias-label-tertiary); }
-      .tcr-phase-online .tcr-dot { background: var(--dsw-alias-state-success-primary); }
-      .tcr-phase-starting .tcr-dot, .tcr-phase-restarting .tcr-dot { background: var(--dsw-alias-state-warn-primary); }
-      .tcr-phase-error .tcr-dot { background: var(--dsw-alias-state-error-primary); }
-      .tcr-phase-stopping .tcr-dot { background: var(--dsw-alias-state-warn-primary); }
       .tcr-grid { display: grid; grid-template-columns: minmax(0, 1fr); }
       .tcr-row { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; padding: 8px 0; border-bottom: 1px dashed var(--dsw-alias-border-l3); font-size: 13px; min-width: 0; }
       .tcr-row:last-child { border-bottom: 0; }
       .tcr-row-label { color: var(--dsw-alias-label-secondary); flex: 0 0 auto; }
-      .tcr-row-value { text-align: right; color: var(--dsw-alias-label-primary); min-width: 0; overflow-wrap: anywhere; }
+      .tcr-row-value { text-align: right; color: var(--dsw-alias-label-primary); min-width: 0; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
       .tcr-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-size: 12.5px; }
-      .tcr-code { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; background: var(--dsw-alias-bg-layer-2); border: 1px solid var(--dsw-alias-border-l3); border-radius: 10px; padding: 10px 12px; margin-top: 8px; min-width: 0; }
+      .tcr-code { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; background: var(--dsw-alias-bg-layer-2); border: 1px solid var(--dsw-alias-border-l3); border-radius: 12px; padding: 11px 13px; margin-top: 8px; min-width: 0; }
       .tcr-code-text { min-width: 0; overflow-wrap: anywhere; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-size: 12.5px; line-height: 1.55; user-select: all; }
-      .tcr-address { font-size: 13px; line-height: 1.65; }
+      .tcr-address { font-size: 13.5px; line-height: 1.65; letter-spacing: .01em; }
       .tcr-label { display: block; font-size: 12px; font-weight: 500; color: var(--dsw-alias-label-secondary); margin: 0 0 6px; }
       .tcr-textarea { width: 100%; box-sizing: border-box; min-height: 92px; resize: vertical; border-radius: 10px; border: 1px solid var(--dsw-alias-border-l2); background: var(--dsw-alias-bg-base); color: var(--dsw-alias-label-primary); padding: 10px 12px; font: inherit; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12.5px; line-height: 1.6; }
       .tcr-textarea:focus { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: 1px; }
@@ -577,19 +602,29 @@ window.__ModuleLoader__.load({
       .tcr-progress-bar { height: 100%; border-radius: inherit; background: var(--dsw-alias-brand-primary); transition: width .25s ease; }
       .tcr-spinner { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--dsw-alias-border-l2); border-top-color: var(--dsw-alias-brand-primary); animation: tcr-spin .8s linear infinite; }
       @keyframes tcr-spin { to { transform: rotate(360deg); } }
+      @keyframes tcr-march { to { background-position: 16px 0; } }
+      @keyframes tcr-pulse { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--wire) 45%, transparent); } 50% { box-shadow: 0 0 0 5px transparent; } }
       .tcr-empty { color: var(--dsw-alias-label-tertiary); font-size: 13px; }
       .tcr-warning-list { margin: 8px 0 0; padding-left: 18px; color: var(--dsw-alias-state-warn-label); font-size: 12px; line-height: 1.6; }
-      .tcr-disclosure { border: 1px solid var(--dsw-alias-border-l3); border-radius: 14px; background: var(--dsw-alias-bg-layer-1); }
-      .tcr-disclosure > summary { display: flex; align-items: center; gap: 10px; padding: 14px 18px; cursor: pointer; list-style: none; font-size: 15px; line-height: 1.4; font-weight: 600; }
+      .tcr-disclosure { border: 1px solid var(--dsw-alias-border-l3); border-radius: 16px; background: var(--dsw-alias-bg-layer-1); }
+      .tcr-disclosure > summary { display: flex; align-items: center; gap: 10px; padding: 15px 19px; cursor: pointer; list-style: none; font-size: 15px; line-height: 1.4; font-weight: 600; }
       .tcr-disclosure > summary::-webkit-details-marker { display: none; }
       .tcr-disclosure > summary::after { content: '▸'; margin-left: auto; color: var(--dsw-alias-label-tertiary); transition: transform .15s ease; }
       .tcr-disclosure[open] > summary::after { transform: rotate(90deg); }
-      .tcr-disclosure-body { padding: 0 18px 14px; }
+      .tcr-disclosure-body { padding: 0 19px 16px; }
       @media (max-width: 720px) {
+        .tcr-page { padding: 20px 14px 32px; }
+        .tcr-page .tcr-grid { grid-template-columns: minmax(0, 1fr); }
         .tcr-section { gap: 12px; }
+        .tcr-hero { padding: 14px 14px 12px; }
+        .tcr-wire { gap: 8px; }
+        .tcr-wire-label { letter-spacing: .04em; }
         .tcr-card { padding: 14px; }
         .tcr-recent-row { grid-template-columns: 1.4fr .6fr .9fr; }
         .tcr-recent-row > :nth-child(4), .tcr-recent-row > :nth-child(5) { display: none; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .tcr-spinner, .tcr-wire-track, .tcr-wire-plate .tcr-wire-dot { animation: none !important; }
       }
     `;
 
@@ -718,15 +753,48 @@ window.__ModuleLoader__.load({
     }
 
     /**
-     * @param {{ phase?: string, t: Function }} props - phase from the Host.
+     * The tunnel drawn as a wire: this Harness on the left, the paired client
+     * on the right, and the phase in the plate between them. The line is solid
+     * while the tunnel can carry traffic, marches while tailcat negotiates it,
+     * and falls silent when it cannot. The chips name the parts that change
+     * without a restart; the actions sit on the plate's lower edge because they
+     * act on exactly what the wire shows.
+     * @param {{ phase?: string, t: Function, region?: object | null, keyMode?: string, doorMode?: string, children?: unknown }} props - status facts and actions.
      */
-    function StatusPill({ phase, t }) {
-      const key = PHASE_KEY[phase] ?? 'statusUnknown';
+    function Wire({ phase, t, region, keyMode, doorMode, children }) {
+      const state =
+        phase === 'online'
+          ? 'online'
+          : phase === 'error'
+            ? 'error'
+            : phase === 'starting' || phase === 'restarting' || phase === 'stopping'
+              ? 'pending'
+              : 'idle';
+      const chips = [];
+      if (region) chips.push(`${t('diagRegion')} ${region.name} (${region.id})`);
+      if (keyMode === 'ephemeral') chips.push(t('modeEphemeral'));
+      else if (keyMode) chips.push(t('modeStable'));
+      if (doorMode === 'socket') chips.push(t('modeSocket'));
+      else if (doorMode === 'tcp') chips.push(t('modeTcp'));
       return h(
-        'span',
-        { className: `tcr-pill tcr-phase-${phase ?? 'unknown'}`, role: 'status', 'aria-live': 'polite' },
-        h('span', { className: 'tcr-dot' }),
-        `${t('statusLabel')} · ${t(key)}`,
+        'div',
+        { className: 'tcr-hero' },
+        h(
+          'div',
+          { className: 'tcr-wire', 'data-state': state },
+          h('span', { className: 'tcr-wire-label' }, t('wireHarness')),
+          h('span', { className: 'tcr-wire-track', 'aria-hidden': 'true' }),
+          h(
+            'span',
+            { className: 'tcr-wire-plate', role: 'status', 'aria-live': 'polite' },
+            h('span', { className: 'tcr-wire-dot' }),
+            t(PHASE_KEY[phase] ?? 'statusUnknown'),
+          ),
+          h('span', { className: 'tcr-wire-track', 'aria-hidden': 'true' }),
+          h('span', { className: 'tcr-wire-label tcr-wire-label-end' }, t('wireClient'), h('span', { className: 'tcr-wire-dot' })),
+        ),
+        chips.length ? h('div', { className: 'tcr-chips' }, chips.map((text, index) => h('span', { key: index, className: 'tcr-chip' }, text))) : null,
+        children ? h('div', { className: 'tcr-hero-actions' }, children) : null,
       );
     }
 
@@ -896,6 +964,7 @@ window.__ModuleLoader__.load({
         h(
           'div',
           { className: 'tcr-title-row' },
+          h('span', { className: 'tcr-mark', 'aria-hidden': 'true' }, h(PanelIcon, { size: 18 })),
           h('h2', { className: 'tcr-title' }, t('title')),
           desktop ? h('span', { className: 'tcr-badge tcr-surface-badge' }, t('surfaceDesktop')) : null,
         ),
@@ -1001,9 +1070,8 @@ window.__ModuleLoader__.load({
         heading,
         desktop ? h('p', { className: 'tcr-hint tcr-desktop-hint', style: { marginTop: 0 } }, t('surfaceHint')) : null,
         h(
-          'div',
-          { className: 'tcr-toolbar' },
-          h(StatusPill, { phase, t }),
+          Wire,
+          { phase, t, region: tailcat.region, keyMode: tailcat.keyMode, doorMode: snapshot.door?.mode },
           phase === 'stopped' || phase === 'error'
             ? h(
                 Button,
@@ -1014,19 +1082,8 @@ window.__ModuleLoader__.load({
                 },
                 t('start'),
               )
-            : h(
-                Button,
-                {
-                  disabled: anyBusy,
-                  onClick: () => void act('stop', {}, 'noticeStopped'),
-                },
-                t('stop'),
-              ),
-          h(
-            Button,
-            { disabled: anyBusy, onClick: () => void act('restart', {}, 'noticeRestarted') },
-            t('restart'),
-          ),
+            : h(Button, { disabled: anyBusy, onClick: () => void act('stop', {}, 'noticeStopped') }, t('stop')),
+          h(Button, { disabled: anyBusy, onClick: () => void act('restart', {}, 'noticeRestarted') }, t('restart')),
           h(Button, { variant: 'ghost', disabled: anyBusy, onClick: () => void reload() }, t('refresh')),
         ),
 
@@ -1317,6 +1374,39 @@ window.__ModuleLoader__.load({
     }
 
     /**
+     * The same page in a main-area slot: a sidebar row addresses a main panel,
+     * so the row needs a page to select. This wrapper owns the page-level
+     * scroll that the Settings dialog would otherwise own.
+     */
+    function RemotePage({ t }) {
+      return h('div', { className: 'tcr-page' }, h('div', { className: 'tcr-page-inner' }, h(RemoteSection, { t })));
+    }
+
+    /**
+     * Reads whether the Host's config still asks for a sidebar row. The Settings
+     * section is registered unconditionally; only the shortcut is optional, so a
+     * failed read keeps the documented default instead of hiding a feature over
+     * one request.
+     * @returns {Promise<boolean>} whether to register the sidebar row and its page.
+     */
+    async function readSidebarEntry() {
+      if (typeof fetch !== 'function') return true;
+      try {
+        const response = await fetch(API, {
+          method: 'GET',
+          headers: { accept: 'application/json' },
+          cache: 'no-store',
+          credentials: 'same-origin',
+        });
+        if (!response.ok) return true;
+        const data = await response.json();
+        return data?.config?.sidebarEntry !== false;
+      } catch {
+        return true;
+      }
+    }
+
+    /**
      * @param {string} key - translation key.
      * @param {object} [params] - named placeholders.
      * @returns {string} translated copy.
@@ -1447,6 +1537,40 @@ window.__ModuleLoader__.load({
             ),
           'tailcat-remote: settings section icon',
         );
+        ctx.effect(() => {
+          let disposed = false;
+          let seats;
+          void readSidebarEntry().then((enabled) => {
+            if (disposed || !enabled) return;
+            seats = [
+              ctx.slots.inject('sidebar.panellist', () =>
+                ctx.slots.register(
+                  {
+                    name: 'sidebar.panellist',
+                    id: 'tailcat-remote',
+                    order: 30,
+                    label: () => translate(t, 'nav'),
+                  },
+                  PanelIcon,
+                ),
+              ),
+              ctx.slots.inject('main', () =>
+                ctx.slots.register(
+                  {
+                    name: 'main',
+                    key: 'tailcat-remote',
+                    locale: NS,
+                  },
+                  RemotePage,
+                ),
+              ),
+            ];
+          });
+          return () => {
+            disposed = true;
+            for (const dispose of seats ?? []) dispose();
+          };
+        }, 'tailcat-remote: sidebar entry');
       },
     };
   },

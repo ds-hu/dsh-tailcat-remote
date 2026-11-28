@@ -31,6 +31,7 @@
     "maxRestartAttempts": 10,
     "restartBaseDelayMs": 500,
     "restartMaxDelayMs": 30000,
+    "sidebarEntry": true,
     "customDerpMap": false
   },
   "door": {

@@ -82,9 +82,14 @@ export function makeContext(injected) {
 
 /**
  * Applies the plugin to a fresh face.
- * @param {{ react: object }} options - the module table's `react` for this run.
+ *
+ * The Host read that decides the optional sidebar row happens during `apply`,
+ * so a test that cares about that row passes its own `fetch`; without one the
+ * harness removes the global, which is the bundle's no-fetch fallback and keeps
+ * the suite off the network. Either way the page's global comes back afterwards.
+ * @param {{ react: object, fetch?: Function }} options - the module table's `react` and the Host stub.
  */
-export function applyPlugin({ react }) {
+export function applyPlugin({ react, fetch: readHost }) {
   const factory = loadFactory();
   const plugin = factory((specifier) => {
     if (specifier === 'react') return react;
@@ -93,7 +98,20 @@ export function applyPlugin({ react }) {
   assert.ok(plugin, 'the factory exports the plugin');
   assert.deepEqual(plugin.inject, ['slots', 'locale'], 'the plugin declares its services');
 
+  const previous = globalThis.fetch;
+  if (typeof readHost === 'function') globalThis.fetch = readHost;
+  else delete globalThis.fetch;
   const face = makeContext(plugin.inject);
-  plugin.apply(face.ctx);
+  try {
+    plugin.apply(face.ctx);
+  } finally {
+    if (previous === undefined) delete globalThis.fetch;
+    else globalThis.fetch = previous;
+  }
   return { ...face, plugin, react };
+}
+
+/** Lets deferred registrations settle: they await one Host read before they register. */
+export async function flush() {
+  for (let turn = 0; turn < 4; turn += 1) await new Promise((resolve) => setImmediate(resolve));
 }

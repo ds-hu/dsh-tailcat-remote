@@ -7,7 +7,7 @@
 // and keeps the diagnostics folded — not that it looks right.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { NS, applyPlugin } from './helpers/client-harness.mjs';
+import { NS, applyPlugin, flush } from './helpers/client-harness.mjs';
 
 const snapshot = {
   ok: true,
@@ -196,7 +196,7 @@ function inspect(tree) {
 /** Applies the plugin, then renders the registered section against `respond`. */
 async function renderSection(respond) {
   const { react, hooks } = createReact();
-  const face = applyPlugin({ react });
+  const face = applyPlugin({ react, fetch: respond });
   const section = face.registrations.find(({ options }) => options.name === 'settings.section');
   const t = face.translator(NS);
 
@@ -221,11 +221,47 @@ async function renderSection(respond) {
 
 const okResponse = (body) => async () => ({ ok: true, status: 200, json: async () => body });
 
+/** Renders the page that the sidebar row selects, which wraps the section. */
+async function renderPage(respond) {
+  const { react, hooks } = createReact();
+  const face = applyPlugin({ react, fetch: respond });
+  await flush();
+  const page = face.registrations.find(({ options }) => options.name === 'main');
+  assert.ok(page, 'the default config registers the page behind the sidebar row');
+  const t = face.translator(NS);
+
+  const previous = {
+    fetch: globalThis.fetch,
+    document: globalThis.document,
+    setInterval: globalThis.setInterval,
+  };
+  globalThis.fetch = respond;
+  globalThis.document = { hidden: false, addEventListener() {}, removeEventListener() {} };
+  globalThis.setInterval = () => 1;
+  try {
+    const tree = await render(page.component, { t }, hooks);
+    return inspect(tree);
+  } finally {
+    globalThis.fetch = previous.fetch;
+    if (previous.document === undefined) delete globalThis.document;
+    else globalThis.document = previous.document;
+    globalThis.setInterval = previous.setInterval;
+  }
+}
+
 test('the section renders the pairing flow with diagnostics folded', async () => {
   const view = await renderSection(okResponse(snapshot));
 
   assert.ok(view.text.includes('远程访问'), 'the section carries its own heading');
   assert.ok(view.text.includes('配对这台 Harness'), 'pairing is above the fold');
+  assert.ok(view.text.includes('本机 Harness'), 'the wire names this end of the tunnel');
+  assert.ok(view.text.includes('客户端设备'), 'the wire names the paired end');
+  assert.ok(view.text.includes('运行中'), 'the wire carries the live phase');
+  assert.ok(view.classNames.includes('tcr-hero'), 'the status reads as a hero plate');
+  assert.ok(view.classNames.includes('tcr-wire'), 'the wire between the two ends renders');
+  assert.equal(view.classNames.includes('tcr-chip'), true, 'the wire chips name the relay and the door');
+  assert.ok(view.text.includes('中继区域 Tokyo (304)'), 'the relay region is visible without opening diagnostics');
+  assert.ok(view.text.includes('Unix socket'), 'the door mode is visible without opening diagnostics');
   assert.ok(view.text.includes('安全'), 'the allow-list card renders');
   assert.ok(view.text.includes('状态与诊断'), 'diagnostics render as a summary');
   assert.ok(view.text.includes('最近连接'), 'connection history renders as a summary');
@@ -238,6 +274,7 @@ test('the section renders the pairing flow with diagnostics folded', async () =>
     false,
     'the QR code stays opt-in',
   );
+  assert.equal(view.classNames.includes('tcr-page'), false, 'the section itself still owns no page frame');
   assert.equal(view.classNames.some((name) => name.includes('tcr-surface-badge')), false, 'no desktop badge on web');
 });
 
@@ -259,6 +296,16 @@ test('the section owns no page frame: the dialog owns height and scrolling', asy
     false,
     'a page-level scroll container would nest a second scrollbar inside the dialog',
   );
+});
+
+test('the page behind the sidebar row owns the scroll the section refuses', async () => {
+  const view = await renderPage(okResponse(snapshot));
+
+  assert.equal(view.tags[0], 'div', 'the page is a plain container, not a second section');
+  assert.equal(view.classNames[0], 'tcr-page', 'the page-level scroll lives here');
+  assert.ok(view.classNames.includes('tcr-page-inner'), 'the page centres its content column');
+  assert.ok(view.classNames.includes('tcr-section'), 'the page wraps the same section the dialog shows');
+  assert.ok(view.text.includes('远程访问'), 'the page and the section share a heading');
 });
 
 test('a failing read renders the unavailable alert instead of a blank section', async () => {

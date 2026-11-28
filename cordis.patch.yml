@@ -3,8 +3,10 @@
 # One row: the Host half. `name` must be this package's name so the Loader
 # resolves the row (and therefore the code it mounts) from the profile's
 # node_modules. The browser half is declared by package.json's `dsh.client`
-# and served by the Web shell; it registers one Settings section
-# (`settings.section`, id `tailcat-remote`) and owns no sidebar row.
+# and served by the Web shell; it always registers one Settings section
+# (`settings.section`, id `tailcat-remote`) and, unless `sidebarEntry` is
+# false, the shortcut row (`sidebar.panellist`) plus the main-area page that
+# row selects. The section is the page; the row is a shortcut to it.
 #
 # The plugin owns its runtime data in $DSH_HOME/tailcat-remote/ (the device
 # allow-list) and the tailcat private key under the platform user-config
@@ -38,6 +40,7 @@
 #           maxRestartAttempts: 10
 #           restartBaseDelayMs: 500
 #           restartMaxDelayMs: 30000
+#           sidebarEntry: true           # sidebar shortcut to the page; reload to apply
 
 - insert:
     - id: dsh-tailcat-remote

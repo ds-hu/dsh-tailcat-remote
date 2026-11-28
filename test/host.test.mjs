@@ -61,14 +61,24 @@ test('every locale document is valid JSON and carries the panel metadata', () =>
   }
 });
 
-test('the client bundle registers the Settings section and no sidebar row', () => {
+test('the client bundle keeps the Settings section and offers the sidebar row as a config choice', () => {
   const client = read('client.js');
   assert.match(client, /__ModuleLoader__\.load/);
   assert.match(client, /id: '@ds-hu\/dsh-tailcat-remote'/);
   assert.match(client, /settings\.section/);
-  assert.equal(client.includes('sidebar.panellist'), false, 'the page lives in Settings, not the sidebar');
-  assert.equal(client.includes("inject('main'"), false, 'the page owns no main-area key any more');
+  assert.match(client, /ctx\.slots\.inject\('sidebar\.panellist'/, 'the shortcut row is registered when config allows');
+  assert.match(client, /ctx\.slots\.inject\('main'/, 'the shortcut needs a main-area page to select');
+  assert.match(client, /config\?\.sidebarEntry !== false/, 'the read defaults to the documented on state');
   assert.equal(client.includes('<div'), false, 'the client is plain React.createElement, not JSX');
+});
+
+test('the sidebar row is documented as a switch, not a removal', () => {
+  const config = read('src/config.js');
+  assert.match(config, /sidebarEntry: z\s*\.boolean\(\)\s*\.default\(true\)/s);
+  assert.match(config, /sidebarEntry: config\.sidebarEntry/);
+
+  const patch = read('cordis.patch.yml');
+  assert.match(patch, /sidebarEntry/);
 });
 
 test('the snapshot carries the running profile as a display-only surface fact', () => {
@@ -85,6 +95,7 @@ test('the panel labels the desktop profile and explains its tray lifetime', () =
   assert.match(client, /diagSurface: '运行环境'/);
   assert.match(client, /diagSurface: 'Runtime'/);
   assert.match(client, /tcr-title-row/);
+  assert.match(client, /tcr-wire-label/);
   assert.match(client, /tcr-desktop-hint/);
   assert.equal(client.includes('dsh web'), false, 'session-expiry copy must not name one profile');
 });

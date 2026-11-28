@@ -56,6 +56,12 @@ export const Config = z.object({
   maxRestartAttempts: z.natural().min(0).max(100).default(10).description('Consecutive automatic restart attempts before the tunnel stays stopped in the error state.'),
   restartBaseDelayMs: z.natural().min(100).max(60_000).default(500).description('First restart delay in milliseconds; later attempts double it.'),
   restartMaxDelayMs: z.natural().min(1_000).max(600_000).default(30_000).description('Upper bound for one automatic restart delay in milliseconds.'),
+  sidebarEntry: z
+    .boolean()
+    .default(true)
+    .description(
+      'Show the Remote Access row in the sidebar panel list. The page stays in Settings either way, so turning the row off only removes the shortcut. Reload the page after changing it.',
+    ),
 });
 
 /**
@@ -95,6 +101,7 @@ export function resolveConfig(input) {
     maxRestartAttempts,
     restartBaseDelayMs,
     restartMaxDelayMs: Math.max(restartBaseDelayMs, restartMaxDelayMs),
+    sidebarEntry: value.sidebarEntry !== false,
   };
 }
 
@@ -117,6 +124,7 @@ export function configView(config) {
     maxRestartAttempts: config.maxRestartAttempts,
     restartBaseDelayMs: config.restartBaseDelayMs,
     restartMaxDelayMs: config.restartMaxDelayMs,
+    sidebarEntry: config.sidebarEntry,
     customDerpMap: config.derpMapUrl !== '',
   };
 }
