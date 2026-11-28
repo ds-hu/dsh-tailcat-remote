@@ -58,8 +58,10 @@ await page.waitForTimeout(500);
 await security.screenshot({ path: path.join(outDir, '02-security.png') });
 
 // The optional sidebar row opens the same section as a main-area page; capture
-// that wider layout so the shortcut is documented by the screenshots too.
+// that wider layout so the shortcut is documented by the screenshots too. The
+// taller viewport keeps the Interface card whole instead of clipping its hint.
 await openSidebarPage(page);
+await page.setViewportSize({ width: 1440, height: 1700 });
 await page.waitForTimeout(800);
 await page.screenshot({ path: path.join(outDir, '05-panel.png') });
 console.log('sidebar page screenshot written');
