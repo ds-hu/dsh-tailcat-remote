@@ -12,6 +12,7 @@
 export const LABELS = {
   newSession: '新会话',
   settings: '设置',
+  accountMenu: '账号菜单',
   nav: '远程访问',
   section: '状态与诊断',
   pairing: '配对这台 Harness',
@@ -50,25 +51,59 @@ export async function dismissModals(page) {
   }
 }
 
+/** Click the first visible match, waiting for it to appear; returns whether it clicked. */
+async function clickVisible(locator, timeout = 5_000) {
+  const first = locator.first();
+  try {
+    await first.waitFor({ state: 'visible', timeout });
+  } catch {
+    return false;
+  }
+  await first.click().catch(() => {});
+  return true;
+}
+
 /**
  * Open the Settings dialog and wait for the remote-access section to be listed.
  *
- * The shell owns two ways in: the sidebar's bottom trigger and the
- * `settings.open` command. The trigger is a plain Settings button when no
- * account launcher replaced it, which is the case for the signed-out CI
- * profiles; the keyboard path covers a launcher-owned seat. Local pages get
- * the command as `Mod+Alt+,`; web builds only bind it on macOS and Windows, so
- * the button is tried first.
+ * There are three ways in, and which one exists depends on the composition:
+ *
+ * - the shell's plain Settings button, when nothing owns the sidebar's bottom
+ *   seat;
+ * - the account launcher's menu, which is the usual case and the only one that
+ *   works on a Linux web build — the `settings.open` command is bound on macOS
+ *   and Windows only, so the shortcut is the last resort;
+ * - the shortcut itself.
+ *
+ * The launcher's trigger takes its accessible name from the account dictionary
+ * (`account.menu`) while its visible label reads 更多 when signed out, so the
+ * menu item is matched by role first and by text second.
  */
 export async function openSettings(page) {
-  const trigger = page.getByRole('button', { name: LABELS.settings, exact: true }).first();
-  if ((await trigger.count()) > 0) {
-    await trigger.click({ force: true }).catch(() => {});
+  const section = page.getByRole('button', { name: LABELS.nav, exact: true }).first();
+  const listed = async () => (await section.count()) > 0;
+
+  if (!(await listed())) {
+    await clickVisible(page.getByRole('button', { name: LABELS.settings, exact: true }));
   }
-  if ((await page.getByRole('button', { name: LABELS.nav, exact: true }).count()) === 0) {
+
+  if (!(await listed())) {
+    const launcher = page.getByRole('button', { name: LABELS.accountMenu, exact: true });
+    if (await clickVisible(launcher)) {
+      await page.waitForTimeout(300);
+      const item = page.getByRole('menuitem', { name: LABELS.settings });
+      if (!(await clickVisible(item))) {
+        await clickVisible(page.getByText(LABELS.settings, { exact: true }));
+      }
+      await page.waitForTimeout(300);
+    }
+  }
+
+  if (!(await listed())) {
     await page.keyboard.press('Control+Alt+,');
   }
-  await page.getByRole('button', { name: LABELS.nav, exact: true }).first().waitFor({ timeout: 60_000 });
+
+  await section.waitFor({ timeout: 60_000 });
 }
 
 /**
